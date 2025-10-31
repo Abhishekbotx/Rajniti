@@ -135,7 +135,7 @@ frontend/
 ├── public/                 # Static assets
 ├── package.json           # Dependencies
 ├── tsconfig.json          # TypeScript config
-├── tailwind.config.ts     # Tailwind config
+├── postcss.config.mjs     # PostCSS & Tailwind config
 └── next.config.ts         # Next.js config
 ```
 

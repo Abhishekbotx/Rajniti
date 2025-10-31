@@ -138,7 +138,7 @@ vercel
 **Netlify:**
 - Set base directory to `frontend`
 - Build command: `npm run build`
-- Publish directory: `frontend/.next`
+- Framework: Next.js (auto-detected)
 
 **GCP Cloud Run:**
 ```bash
