@@ -29,14 +29,12 @@ class PerplexityService:
                 "environment variable or pass api_key parameter."
             )
 
-        # Initialize Perplexity client
-        os.environ["PERPLEXITY_API_KEY"] = self.api_key
-        self.client = Perplexity()
+        # Initialize Perplexity client with API key directly
+        self.client = Perplexity(api_key=self.api_key)
 
     def search(
         self,
         query: str,
-        max_results: int = 5,
         location: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
@@ -44,18 +42,17 @@ class PerplexityService:
 
         Args:
             query: Search query string
-            max_results: Maximum number of results to return (default: 5, max: 20)
             location: Custom location dict with keys like 'country', 'region', 'city'.
                      If not provided, defaults to India.
 
         Returns:
-            Dict containing search results with 'query', 'results', and metadata
+            Dict containing 'query', 'answer', 'citations', 'model', and 'location'
 
         Example:
             >>> service = PerplexityService()
             >>> results = service.search("election results Delhi 2025")
-            >>> for result in results['results']:
-            ...     print(result['title'], result['url'])
+            >>> print(results['answer'])
+            >>> print(results['citations'])
         """
         # Default to India if no location specified
         if location is None:
@@ -93,7 +90,6 @@ class PerplexityService:
     def search_india(
         self,
         query: str,
-        max_results: int = 5,
         region: Optional[str] = None,
         city: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -102,12 +98,11 @@ class PerplexityService:
 
         Args:
             query: Search query string
-            max_results: Maximum number of results
             region: Indian state/region (e.g., "Delhi", "Maharashtra", "Karnataka")
             city: Indian city (e.g., "New Delhi", "Mumbai", "Bengaluru")
 
         Returns:
-            Dict containing search results
+            Dict containing 'query', 'answer', 'citations', 'model', and 'location'
 
         Example:
             >>> service = PerplexityService()
@@ -116,6 +111,7 @@ class PerplexityService:
             ...     region="Delhi",
             ...     city="New Delhi"
             ... )
+            >>> print(results['answer'])
         """
         location = {"country": "IN"}
 
@@ -125,7 +121,7 @@ class PerplexityService:
         if city:
             location["city"] = city
 
-        return self.search(query, max_results=max_results, location=location)
+        return self.search(query, location=location)
 
     def search_multiple_queries(
         self, queries: List[str], location: Optional[Dict[str, Any]] = None
