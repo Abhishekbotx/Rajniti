@@ -105,10 +105,10 @@ The Rajniti landing page is a beautiful, India-themed website built with Next.js
 
 ### **Features**
 
-- 🎨 **India-Themed Design**: Orange, white, and green color scheme
-- ⚡ **Server-Side Rendering**: Built with Next.js App Router for optimal performance
-- 📱 **Fully Responsive**: Works seamlessly on all devices
-- 🚀 **Easy Deployment**: Compatible with Vercel, Netlify, GCP, and AWS
+-   🎨 **India-Themed Design**: Orange, white, and green color scheme
+-   ⚡ **Server-Side Rendering**: Built with Next.js App Router for optimal performance
+-   📱 **Fully Responsive**: Works seamlessly on all devices
+-   🚀 **Easy Deployment**: Compatible with Vercel, Netlify, GCP, and AWS
 
 ### **Quick Start (Frontend)**
 
@@ -130,17 +130,20 @@ npm run dev
 The landing page can be easily deployed to various platforms:
 
 **Vercel (Recommended):**
+
 ```bash
 cd frontend
 vercel
 ```
 
 **Netlify:**
-- Set base directory to `frontend`
-- Build command: `npm run build`
-- Framework: Next.js (auto-detected)
+
+-   Set base directory to `frontend`
+-   Build command: `npm run build`
+-   Framework: Next.js (auto-detected)
 
 **GCP Cloud Run:**
+
 ```bash
 gcloud run deploy rajniti-frontend --source ./frontend
 ```
@@ -785,7 +788,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Built with ❤️ for Indian Democracy**
+**Built with ❤️ for 🇮🇳 Democracy**
 
 _Empowering citizens, researchers, and developers with accessible election data_
 

@@ -4,11 +4,11 @@ A beautiful, India-themed landing page for the Rajniti Election Data API built w
 
 ## 🚀 Features
 
-- **Server-Side Rendering (SSR)**: Built with Next.js App Router for optimal performance
-- **India-Themed Design**: Orange, white, and green color scheme reflecting Indian heritage
-- **Fully Responsive**: Works seamlessly on desktop, tablet, and mobile devices
-- **SEO Optimized**: Proper metadata and semantic HTML
-- **Fast & Lightweight**: Minimal dependencies, optimized for performance
+-   **Server-Side Rendering (SSR)**: Built with Next.js App Router for optimal performance
+-   **India-Themed Design**: Orange, white, and green color scheme reflecting Indian heritage
+-   **Fully Responsive**: Works seamlessly on desktop, tablet, and mobile devices
+-   **SEO Optimized**: Proper metadata and semantic HTML
+-   **Fast & Lightweight**: Minimal dependencies, optimized for performance
 
 ## 📋 Sections
 
@@ -20,17 +20,17 @@ A beautiful, India-themed landing page for the Rajniti Election Data API built w
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Deployment**: Vercel-ready (also compatible with Netlify, GCP, AWS)
+-   **Framework**: Next.js 16 (App Router)
+-   **Language**: TypeScript
+-   **Styling**: Tailwind CSS
+-   **Deployment**: Vercel-ready (also compatible with Netlify, GCP, AWS)
 
 ## 🏃‍♂️ Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ 
-- npm or yarn
+-   Node.js 18+
+-   npm or yarn
 
 ### Installation
 
@@ -72,9 +72,9 @@ vercel
 1. Push your code to GitHub
 2. Import your repository on [Netlify](https://netlify.com)
 3. Configure build settings:
-   - **Base Directory**: `frontend`
-   - **Build Command**: `npm run build`
-   - **Publish Directory**: `frontend/.next`
+    - **Base Directory**: `frontend`
+    - **Build Command**: `npm run build`
+    - **Publish Directory**: `frontend/.next`
 4. Deploy!
 
 ### Deploy to GCP (Cloud Run)
@@ -145,18 +145,18 @@ frontend/
 
 The India-themed colors are defined in Tailwind and can be customized in `app/page.tsx`:
 
-- **Orange**: `orange-500`, `orange-600` (Saffron)
-- **White**: `white`
-- **Green**: `green-500`, `green-600`
+-   **Orange**: `orange-500`, `orange-600` (Saffron)
+-   **White**: `white`
+-   **Green**: `green-500`, `green-600`
 
 ### Content
 
 Edit the content directly in `app/page.tsx`:
 
-- Hero section: Update heading and description
-- About section: Modify the feature cards
-- Contribute section: Change contribution types
-- API section: Update coming soon features
+-   Hero section: Update heading and description
+-   About section: Modify the feature cards
+-   Contribute section: Change contribution types
+-   API section: Update coming soon features
 
 ## 🔧 Configuration
 
@@ -185,4 +185,4 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-Built with ❤️ for Indian Democracy
+Built with ❤️ for 🇮🇳 Democracy
