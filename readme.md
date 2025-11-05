@@ -1,14 +1,15 @@
 # 🗳️ Rajniti - Simple Election Data API
 
-> **A clean, lightweight Flask API for Indian election data**
+> **A clean, lightweight Flask API for Indian election data with a beautiful landing page**
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![API Version](https://img.shields.io/badge/API-v1.0-orange.svg)](#api-documentation)
 [![License](https://img.shields.io/badge/License-MIT-red.svg)](LICENSE)
 [![Data Coverage](https://img.shields.io/badge/Data-50K%2B_Records-purple.svg)](#data-coverage)
 
-A simple, clean REST API serving Indian Election Commission data from JSON files. Built with minimal Flask setup for easy deployment and scraping capabilities.
+A simple, clean REST API serving Indian Election Commission data from JSON files. Built with minimal Flask setup for easy deployment and scraping capabilities. Includes a beautiful, India-themed landing page built with Next.js.
 
 ---
 
@@ -19,6 +20,7 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 | Feature                     | Description                                               |
 | --------------------------- | --------------------------------------------------------- |
 | 🚀 **Simple Flask API**     | Clean RESTful endpoints serving JSON data                 |
+| 🌐 **Landing Page**         | Beautiful Next.js landing page with India-themed design   |
 | 📊 **Election Data**        | 50,000+ records across Lok Sabha & Assembly elections     |
 | 🔍 **Search & Filter**      | Basic search and filtering capabilities                   |
 | 🕸️ **Intelligent Scraping** | Advanced scraping system with retry logic & rate limiting |
@@ -94,6 +96,56 @@ pre-commit install
 # Run development server
 python run.py
 ```
+
+---
+
+## 🌐 **Landing Page**
+
+The Rajniti landing page is a beautiful, India-themed website built with Next.js 16, TypeScript, and Tailwind CSS.
+
+### **Features**
+
+- 🎨 **India-Themed Design**: Orange, white, and green color scheme
+- ⚡ **Server-Side Rendering**: Built with Next.js App Router for optimal performance
+- 📱 **Fully Responsive**: Works seamlessly on all devices
+- 🚀 **Easy Deployment**: Compatible with Vercel, Netlify, GCP, and AWS
+
+### **Quick Start (Frontend)**
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Visit http://localhost:3000
+```
+
+### **Deploy the Landing Page**
+
+The landing page can be easily deployed to various platforms:
+
+**Vercel (Recommended):**
+```bash
+cd frontend
+vercel
+```
+
+**Netlify:**
+- Set base directory to `frontend`
+- Build command: `npm run build`
+- Framework: Next.js (auto-detected)
+
+**GCP Cloud Run:**
+```bash
+gcloud run deploy rajniti-frontend --source ./frontend
+```
+
+For detailed deployment instructions, see [frontend/README.md](frontend/README.md)
 
 ---
 
