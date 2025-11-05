@@ -8,7 +8,7 @@ specifically configured for India-based searches.
 import os
 from typing import Any, Dict, List, Optional
 
-from perplexityai import Perplexity
+from perplexity import Perplexity
 
 
 class PerplexityService:
