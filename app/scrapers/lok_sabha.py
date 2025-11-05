@@ -69,12 +69,12 @@ class LokSabhaScraper:
         # Scrape all data
         # Layer 1: Party-wise results
         logger.info("Scraping party-wise results...")
-        parties_data =self._scrape_parties()
+        parties_data = self._scrape_parties()
         self.parties_data = parties_data
 
         # Layer 2: Constituencies
         logger.info("Discovering constituencies...")
-        constituencies_data =self._scrape_constituencies(parties_data)
+        constituencies_data = self._scrape_constituencies(parties_data)
         self.constituencies_data = constituencies_data
 
         print("CONSTITUENCIES", constituencies_data)
@@ -144,13 +144,17 @@ class LokSabhaScraper:
                         party_name = party_full_name.split(" - ")[0]
                         party_short_name = party_full_name.split(" - ")[1]
                         seats_won = cols[1].text.strip()
-                        party_id = cols[1].find("a")["href"].split("-")[-1].split(".")[0]
-                        parties_data.append({
-                            "name": party_name,
-                            "short_name": party_short_name,
-                            "seats_won": seats_won,
-                            "party_id": party_id
-                        })
+                        party_id = (
+                            cols[1].find("a")["href"].split("-")[-1].split(".")[0]
+                        )
+                        parties_data.append(
+                            {
+                                "name": party_name,
+                                "short_name": party_short_name,
+                                "seats_won": seats_won,
+                                "party_id": party_id,
+                            }
+                        )
 
         return parties_data
 
@@ -160,7 +164,9 @@ class LokSabhaScraper:
 
         return constituencies_data
 
-    def _discover_constituency_details(self, parties_data: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    def _discover_constituency_details(
+        self, parties_data: List[Dict[str, Any]]
+    ) -> List[Dict[str, str]]:
         """Auto-discover constituency details from main page."""
         logger.info("Discovering constituency details...")
         constituencies_data = []
@@ -189,12 +195,17 @@ class LokSabhaScraper:
                     cols = row.find_all("td")
                     if len(cols) >= 1:
                         a_tag = cols[1].find("a")
-                        consituency_name = a_tag.text.strip().split("(")[0] if a_tag else cols[1].text.strip().split("(")[0]
-                        link = a_tag["href"] if a_tag and a_tag.has_attr("href") else None
-                        constituencies_data.append({
-                            "name": consituency_name,
-                            "url": link
-                        })
+                        consituency_name = (
+                            a_tag.text.strip().split("(")[0]
+                            if a_tag
+                            else cols[1].text.strip().split("(")[0]
+                        )
+                        link = (
+                            a_tag["href"] if a_tag and a_tag.has_attr("href") else None
+                        )
+                        constituencies_data.append(
+                            {"name": consituency_name, "url": link}
+                        )
 
         return constituencies_data
 

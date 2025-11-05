@@ -621,7 +621,72 @@ rajniti/
 # Application (minimal configuration)
 SECRET_KEY=your-secret-key              # Flask secret key
 FLASK_ENV=production                    # Environment (development/production)
+
+# Database (optional)
+DATABASE_URL=postgresql://user:password@localhost:5432/rajniti  # PostgreSQL connection
 ```
+
+---
+
+## 🗄️ **Database**
+
+Rajniti now includes PostgreSQL support for future data storage needs.
+
+### **Setup with Docker**
+
+```bash
+# Start both API and PostgreSQL
+docker-compose up -d
+
+# PostgreSQL will be available at:
+# - Host: localhost
+# - Port: 5432
+# - Database: rajniti
+# - User: rajniti
+# - Password: rajniti_dev_password
+```
+
+### **Local Development**
+
+```bash
+# Install PostgreSQL locally or use Docker
+docker run -d \
+  --name rajniti-postgres \
+  -e POSTGRES_USER=rajniti \
+  -e POSTGRES_PASSWORD=rajniti_dev_password \
+  -e POSTGRES_DB=rajniti \
+  -p 5432:5432 \
+  postgres:16-alpine
+
+# Set DATABASE_URL in your environment
+export DATABASE_URL="postgresql://rajniti:rajniti_dev_password@localhost:5432/rajniti"
+
+# Start the app
+python run.py
+```
+
+### **Database Health Check**
+
+Check database connectivity via the health endpoint:
+
+```bash
+curl http://localhost:8080/api/v1/health
+```
+
+Response with database connected:
+```json
+{
+    "success": true,
+    "message": "Rajniti API is healthy",
+    "version": "1.0.0",
+    "database": {
+        "connected": true,
+        "status": "healthy"
+    }
+}
+```
+
+**Note:** The application works perfectly fine without a database configured. Database support is optional and ready for future schema implementation.
 
 ---
 
@@ -633,6 +698,17 @@ FLASK_ENV=production                    # Environment (development/production)
 # docker-compose.yml
 version: "3.8"
 services:
+    postgres:
+        image: postgres:16-alpine
+        environment:
+            - POSTGRES_USER=rajniti
+            - POSTGRES_PASSWORD=rajniti_dev_password
+            - POSTGRES_DB=rajniti
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
     rajniti-api:
         build: .
         ports:
@@ -640,13 +716,14 @@ services:
         environment:
             - FLASK_ENV=production
             - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_URL=postgresql://rajniti:rajniti_dev_password@postgres:5432/rajniti
         volumes:
             - ./app/data:/app/app/data:ro
+        depends_on:
+            - postgres
 
-    redis:
-        image: redis:7-alpine
-        ports:
-            - "6379:6379"
+volumes:
+    postgres_data:
 ```
 
 ```bash
