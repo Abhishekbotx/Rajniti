@@ -7,6 +7,7 @@ import logging
 import os
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,9 @@ logger = logging.getLogger(__name__)
 # SQLAlchemy base for future models
 Base = declarative_base()
 
-# Global engine and session factory
+# Global engine and session factory (used for simple setup)
+# Note: In production, consider using Flask-SQLAlchemy or similar
+# for better integration with Flask's application context
 engine = None
 SessionLocal = None
 
@@ -53,8 +56,11 @@ def init_db(app=None):
         logger.info("Database connection established successfully")
         return True
 
+    except SQLAlchemyError as e:
+        logger.error(f"Database error during initialization: {str(e)}")
+        return False
     except Exception as e:
-        logger.error(f"Failed to initialize database: {str(e)}")
+        logger.error(f"Unexpected error initializing database: {str(e)}")
         return False
 
 
@@ -89,6 +95,9 @@ def check_db_health():
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         return True
-    except Exception as e:
+    except SQLAlchemyError as e:
         logger.error(f"Database health check failed: {str(e)}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error during health check: {str(e)}")
         return False
