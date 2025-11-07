@@ -621,7 +621,192 @@ rajniti/
 # Application (minimal configuration)
 SECRET_KEY=your-secret-key              # Flask secret key
 FLASK_ENV=production                    # Environment (development/production)
+
+# Perplexity AI API (for search functionality)
+PERPLEXITY_API_KEY=your-perplexity-api-key-here
 ```
+
+---
+
+## 🔍 **Perplexity AI Search Integration**
+
+Rajniti integrates with Perplexity AI API to provide powerful, India-focused search capabilities for political information, election data, and news.
+
+### **🚀 Quick Setup**
+
+1. **Get Your API Key**
+   - Sign up at [Perplexity AI](https://www.perplexity.ai/)
+   - Navigate to API settings and generate your API key
+   - Free tier available for testing
+
+2. **Configure Environment**
+   ```bash
+   # Copy example env file
+   cp .env.example .env
+   
+   # Edit .env and add your API key
+   PERPLEXITY_API_KEY=your-actual-api-key-here
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   # Install/update requirements
+   pip install -r requirements.txt
+   ```
+
+### **✨ Features**
+
+- 🇮🇳 **India-Focused**: Automatically filters search results for Indian context
+- 🎯 **Region-Specific**: Support for state/city-level searches (e.g., Delhi, Maharashtra)
+- 🔍 **Real-time Search**: Access latest political news and election information
+- 🌐 **Web Search**: Leverages Perplexity's AI-powered web search
+- 📚 **Citations**: Returns sources for all information
+- ⚡ **Fast & Reliable**: Built-in error handling and retries
+
+### **💻 Usage Examples**
+
+#### **Basic Python Usage**
+
+```python
+from app.services.perplexity_service import PerplexityService
+
+# Initialize service (reads PERPLEXITY_API_KEY from environment)
+service = PerplexityService()
+
+# Simple search with India filter
+results = service.search("Latest election results in India 2025")
+print(results['answer'])
+print(results['citations'])
+
+# Region-specific search
+results = service.search_india(
+    query="political news today",
+    region="Delhi",
+    city="New Delhi"
+)
+
+# Multiple queries at once
+queries = [
+    "Lok Sabha election 2024 results",
+    "Delhi Assembly election 2025 results"
+]
+results = service.search_multiple_queries(queries)
+```
+
+#### **Test the Integration**
+
+Run the included test script to verify your setup:
+
+```bash
+# Set your API key
+export PERPLEXITY_API_KEY='your-api-key-here'
+
+# Run test script
+python scripts/test_perplexity.py
+```
+
+Expected output:
+```
+🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
+Perplexity API Integration Test
+🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
+
+🔍 Testing Basic India Search...
+✅ Perplexity service initialized successfully
+📝 Query: Latest election results in India 2025
+✅ Search completed successfully!
+```
+
+### **⚙️ Advanced Configuration**
+
+#### **Custom Location Filters**
+
+```python
+# Specific location with coordinates
+location = {
+    "country": "IN",
+    "region": "Maharashtra",
+    "city": "Mumbai",
+    "latitude": 19.0760,
+    "longitude": 72.8777
+}
+results = service.search("local political events", location=location)
+```
+
+#### **Multiple Regions**
+
+```python
+# Search across different regions
+regions = ["Delhi", "Maharashtra", "Karnataka"]
+for region in regions:
+    results = service.search_india(
+        "election updates",
+        region=region
+    )
+    print(f"{region}: {results['answer'][:200]}...")
+```
+
+### **🔌 API Models**
+
+Perplexity supports different models:
+- **sonar**: Standard model, optimized for search (default, recommended)
+- **sonar-pro**: Advanced model with higher accuracy (requires pro plan)
+
+### **📝 Response Format**
+
+```python
+{
+    "query": "Your search query",
+    "answer": "AI-generated answer based on search results",
+    "citations": ["https://source1.com", "https://source2.com", ...],
+    "model": "sonar",
+    "location": {"country": "IN"}
+}
+```
+
+### **🔐 Security Notes**
+
+- **Never commit** your API key to git
+- Use `.env` files for local development
+- Use environment variables for production deployment
+- The `.env.example` file shows the format but doesn't contain real keys
+
+### **💡 Use Cases**
+
+- **Election Research**: Search for latest election results and analysis
+- **Political News**: Get India-focused political news and updates
+- **Candidate Information**: Research candidates across different elections
+- **Party Performance**: Analyze party performance in different regions
+- **Policy Updates**: Track government policy changes and announcements
+
+### **🐛 Troubleshooting**
+
+#### API Key Issues
+```bash
+# Check if API key is set
+echo $PERPLEXITY_API_KEY
+
+# Verify .env file exists and has correct format
+cat .env | grep PERPLEXITY_API_KEY
+```
+
+#### Common Errors
+
+1. **"Perplexity API key not provided"**
+   - Solution: Set `PERPLEXITY_API_KEY` environment variable or add to `.env` file
+
+2. **"Module not found: perplexityai"**
+   - Solution: Run `pip install -r requirements.txt`
+
+3. **Rate limit exceeded**
+   - Solution: Wait a moment and retry, or upgrade your Perplexity API plan
+
+### **📚 Resources**
+
+- [Perplexity API Documentation](https://docs.perplexity.ai/)
+- [API Quickstart Guide](https://docs.perplexity.ai/guides/perplexity-sdk)
+- [Search API Guide](https://docs.perplexity.ai/guides/search-guide)
+- [Location Filter Guide](https://docs.perplexity.ai/guides/user-location-filter-guide)
 
 ---
 
