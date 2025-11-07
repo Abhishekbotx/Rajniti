@@ -46,6 +46,7 @@ class LokSabhaScraper:
         self.constituencies_data = []
         self.candidates_data = []
         self.metadata = {}
+        self.all_states=[]
 
     def _generate_uuid(self) -> str:
         """Generate a unique UUID for a candidate."""
@@ -139,6 +140,9 @@ class LokSabhaScraper:
                                 constituency = (
                                     cols[1].text.strip() if len(cols) > 1 else ""
                                 )
+                                state_constituency_id=(
+                                    cols[1].find("a")["href"].split("-")[-1].split(".")[0]
+                                )
                                 votes = cols[3].text.strip() if len(cols) > 3 else ""
                                 margin = cols[4].text.strip() if len(cols) > 4 else ""
 
@@ -152,7 +156,8 @@ class LokSabhaScraper:
                                     "constituency": constituency,
                                     "candidate_name": candidate_name,
                                     "votes": votes,
-                                    "margin": margin
+                                    "margin": margin,
+                                    "state_constituency_id":state_constituency_id
                                 })
             
             time.sleep(0.3)  # Be polite to server
@@ -203,6 +208,7 @@ class LokSabhaScraper:
             if not response:
                 continue
 
+            # print("response here ::", response.content)
             soup = BeautifulSoup(response.content, "html.parser")
 
             # Find the party results table
@@ -242,22 +248,136 @@ class LokSabhaScraper:
     def _scrape_constituencies(self) -> None:
         """Discover and scrape constituency data."""
         constituency_links = self._discover_constituency_links()
+        states_and_ut=self._discover_states_and_ut()
+        
+        self.all_states.append(states_and_ut)
+        
+        # allconstituencies=[]
+        for state in states_and_ut:
+            print("state he in all statesut:",state)
+            res=self._discover_constituencies_by_state(state["state_code"],state["name"])
+            print("state he in all statesut res:",res)
+            
+            for constituencies in res:
+                const_id = constituencies["constituency_code"]
+                const_name = constituencies["name"]
+                const_constituencynumber = constituencies["constituency_number"]
+                const_state_id=state["state_code"]
+    
+                self.constituencies_data.append(
+                    {
+                        "constituency_id": const_id,
+                        "constituency_name": const_name,
+                        "constituency_number": const_constituencynumber,
+                        "state_id": const_state_id,  # Lok Sabha
+                    }
+                )
+        
 
-        for const in constituency_links:
-            # Extract constituency ID from code
-            const_id = const["constituency_code"]
-            const_name = const.get("name", "")
+        # for const in constituency_links:
+        #     # Extract constituency ID from code
+        #     const_id = const["constituency_code"]
+        #     const_name = const.get("name", "")
 
-            self.constituencies_data.append(
-                {
-                    "constituency_id": const_id,
-                    "constituency_name": const_name,
-                    "state_id": "LS",  # Lok Sabha
-                }
-            )
+        #     self.constituencies_data.append(
+        #         {
+        #             "constituency_id": const_id,
+        #             "constituency_name": const_name,
+        #             "state_id": "LS",  # Lok Sabha
+        #         }
+        #     )
 
         logger.info(f"Found {len(self.constituencies_data)} constituencies")
 
+    
+    #Extracting constituencies Logic 
+    def _discover_states_and_ut(self) -> List[Dict[str, str]]:
+        """scape states and ut code from main page."""
+        logger.info("Discovering states and union territories...")
+        states=[]
+        
+        url = f"{self.base_url}/index.htm"
+        response=get_with_retry(url,referer=self.base_url)
+        
+        if not response:
+            logger.warning("couldnt'fetch states/UTs from index page")
+            return states
+        
+        soup=BeautifulSoup(response.content,"html.parser")
+        select_tag = soup.find("select", {"name": "state"})
+        
+        if not select_tag:
+            logger.error("State/UT dropdown not found on the main page!")
+            return select_tag
+        
+        # Extract state and UT codes in options tag
+        for option in select_tag.find_all("option"):
+            value = option.get("value")
+            if value:
+                code=option.get("value")
+                name=option.get_text(strip=True)
+                states.append({
+                    "state_code":code,
+                    "name":name
+                })
+
+        # Remove duplicates
+        seen = set()
+        unique_states = []
+        for const in states:
+            if const["state_code"] not in seen:
+                seen.add(const["state_code"])
+                unique_states.append(const)
+
+        logger.info(f"Discovered {len(unique_states)} states and UTs")
+        return unique_states                
+    
+    def _discover_constituencies_by_state(self,state_code: str,state_name: str) -> List[Dict[str, str]]:
+        """scape states and ut code from main page."""
+        logger.info(f"Discovering constituencies for {state_name}...")
+        constituencies=[]
+        
+        url = f"{self.base_url}/partywiseresult-{state_code}.htm"
+        response=get_with_retry(url,referer=self.base_url)
+        
+        if not response:
+            logger.warning(f"couldnt'fetch constuencies for {state_name}")
+            return constituencies
+        
+        soup=BeautifulSoup(response.content,"html.parser")
+        
+        
+        # Look for states and UT options inside select[name="state"]
+        select_tag = soup.find("select", {"name": "state"})
+        if not select_tag:
+            logger.error(f"Constituency dropdown not found for {state_name}")
+            return constituencies
+        
+        #Look for states and ut code
+        for option in select_tag.find_all("option"):
+            value=option.get("value")
+            if value:
+                # Example format: "ConstituencyName - 01"
+                val=option.get_text(strip=True).split("-")
+                name=option.get_text(strip=True)
+                name=val[0]
+                constituencies.append({
+                    "constituency_code":value,
+                    "name":name,
+                    "constituency_number":val[1].strip()
+                })
+                
+        # Remove duplicates       
+        seen = set()
+        unique_constituencies = []
+        for const in constituencies:
+            if const["constituency_code"] not in seen:
+                seen.add(const["constituency_code"])
+                unique_constituencies.append(const)
+
+        logger.info(f"Discovered {len(unique_constituencies)} constituencies in {state_name}")
+        return unique_constituencies     
+    
     def _discover_constituency_links(self) -> List[Dict[str, str]]:
         """Auto-discover constituency links from main page."""
         logger.info("Discovering constituency links...")
@@ -281,7 +401,6 @@ class LokSabhaScraper:
                 if match:
                     const_code = match.group(1)
                     const_name = link.get_text(strip=True)
-
                     constituency_links.append(
                         {
                             "constituency_code": const_code,
@@ -312,6 +431,10 @@ class LokSabhaScraper:
         # Create folder paths
         lok_sabha_dir = base_path / "lok_sabha" / self.folder_name
         elections_dir = base_path / "elections"
+        main_dir=base_path / "main"
+        
+        #Save states
+        save_json(self.all_states, main_dir / "states.json")
 
         # Save parties
         save_json(self.parties_data, lok_sabha_dir / "parties.json")
