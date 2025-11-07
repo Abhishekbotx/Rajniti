@@ -10,7 +10,7 @@ import re
 import time
 import uuid
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from bs4 import BeautifulSoup
 
@@ -52,6 +52,14 @@ class LokSabhaScraper:
         """Generate a unique UUID for a candidate."""
         return str(uuid.uuid4())
 
+    def _generate_party_page_link(self, party_id: str) -> str:
+        """Generate a constituency page link from party id."""
+        return f"{self.base_url}/partywisewinresultState-{party_id}.htm"
+
+    def _generate_constituency_page_link(self, constituency_code: str) -> str:
+        """Generate a constituency page link from constituency code."""
+        return f"{self.base_url}/candidateswise-{constituency_code}.htm"
+
     def scrape(self) -> None:
         """Main scraping orchestrator - scrapes all data and saves to JSON files."""
         logger.info(f"Starting Lok Sabha scraping from {self.base_url}")
@@ -62,14 +70,15 @@ class LokSabhaScraper:
         # Scrape all data
         # Layer 1: Party-wise results
         logger.info("Scraping party-wise results...")
-        self._scrape_parties()
+        parties_data =self._scrape_parties()
+        self.parties_data = parties_data
 
         # Layer 2: Constituencies
         logger.info("Discovering constituencies...")
-        self._scrape_constituencies()
+        constituencies_data =self._scrape_constituencies(parties_data)
+        self.constituencies_data = constituencies_data
 
-        # Layer 3: Candidates
-        logger.info("Candidates already scraped from party pages")
+        print("CONSTITUENCIES", constituencies_data)
 
         # Save all data
         self._save_all_data()
@@ -95,22 +104,13 @@ class LokSabhaScraper:
 
     def _scrape_parties(self) -> None:
         """Scrape party-wise results and compile party list with seat counts."""
-        # Discover party links from main page
-        party_details = self._discover_parties_details()
-        print("HERE", party_details)
+        parties_data = self._discover_parties_details()
 
-        if not party_details:
+        if not parties_data:
             logger.warning("No parties discovered")
             return
 
-        # Track candidates by party to count seats
-        party_candidates = {}
-
-        logger.info(f"Found {len(party_details)} parties, scraping results...")
-
-        for idx, party_info in enumerate(party_details, 1):
-            party_id = party_info["party_id"]
-            party_name = party_info.get("name", f"Party {party_id}")
+        logger.info(f"Found {len(parties_data)} parties, scraping results...")
 
             logger.info(f"  [{idx}/{len(party_details)}] {party_name}")
 
@@ -196,9 +196,8 @@ class LokSabhaScraper:
 
     def _discover_parties_details(self) -> List[Dict[str, str]]:
         """Discover party links from main results page."""
-        party_details = []
+        parties_data = []
 
-        # Try multiple pages
         urls_to_try = [
             f"{self.base_url}/index.htm",
         ]
@@ -215,7 +214,7 @@ class LokSabhaScraper:
             table = soup.find("table", {"class": "table"})
             if not table:
                 logger.warning("No party table found on main page")
-                return party_details
+                return parties_data
 
             tbody = table.find("tbody")
             if tbody:
@@ -228,24 +227,16 @@ class LokSabhaScraper:
                         party_short_name = party_full_name.split(" - ")[1]
                         seats_won = cols[1].text.strip()
                         party_id = cols[1].find("a")["href"].split("-")[-1].split(".")[0]
-                        party_details.append({
+                        parties_data.append({
                             "name": party_name,
                             "short_name": party_short_name,
                             "seats_won": seats_won,
                             "party_id": party_id
                         })
 
-        # Remove duplicates
-        seen = set()
-        unique_parties = []
-        for party in party_details:
-            if party["party_id"] not in seen:
-                seen.add(party["party_id"])
-                unique_parties.append(party)
+        return parties_data
 
-        return unique_parties
-
-    def _scrape_constituencies(self) -> None:
+    def _scrape_constituencies(self, parties_data: List[Dict[str, Any]]) -> None:
         """Discover and scrape constituency data."""
         constituency_links = self._discover_constituency_links()
         states_and_ut=self._discover_states_and_ut()
