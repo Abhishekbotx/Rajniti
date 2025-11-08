@@ -140,16 +140,15 @@ class LokSabhaScraper:
                 for row in rows:
                     cols = row.find_all("td")
                     if len(cols) >= 2:
-                        party_full_name = cols[0].text.strip()
-                        party_name = party_full_name.split(" - ")[0]
-                        party_short_name = party_full_name.split(" - ")[1]
-                        seats_won = cols[1].text.strip()
-                        party_id = cols[1].find("a")["href"].split("-")[-1].split(".")[0]
+                        full_name = cols[0].text.strip()
+                        name = full_name.split(" - ")[0]
+                        short_name = full_name.split(" - ")[1]
+                        id = cols[1].find("a")["href"].split("-")[-1].split(".")[0]
                         parties_data.append({
-                            "name": party_name,
-                            "short_name": party_short_name,
-                            "seats_won": seats_won,
-                            "party_id": party_id
+                            "id": id,
+                            "name": name,
+                            "short_name": short_name,
+                            "symbol": "",
                         })
 
         return parties_data
@@ -167,7 +166,7 @@ class LokSabhaScraper:
 
         # Fetch Constituency Results page
         for party in parties_data:
-            party_id = party["party_id"]
+            party_id = party["id"]
             party_name = party["name"]
 
             url = self._generate_party_page_link(party_id)
@@ -212,8 +211,8 @@ class LokSabhaScraper:
         # Save constituencies
         save_json(self.constituencies_data, lok_sabha_dir / "constituencies.json")
 
-        # Save candidates
-        save_json(self.candidates_data, lok_sabha_dir / "candidates.json")
+        # TODO": Save candidates
+        # save_json(self.candidates_data, lok_sabha_dir / "candidates.json")
 
         # Build and save election metadata
         self.metadata = {

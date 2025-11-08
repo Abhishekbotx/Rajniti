@@ -8,9 +8,10 @@ from pydantic import BaseModel, Field
 class Party(BaseModel):
     """Party model matching existing JSON structure"""
 
-    party_name: str = Field(alias="party_name")
-    symbol: str
-    total_seats: int = Field(alias="total_seats")
+    id: str = Field(alias="id")
+    name: str = Field(alias="name")
+    short_name: str = Field(alias="short_name")
+    symbol: str = Field(alias="symbol")
 
     class Config:
         allow_population_by_field_name = True
