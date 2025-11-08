@@ -79,6 +79,11 @@ class LokSabhaScraper:
 
         print("CONSTITUENCIES", constituencies_data)
 
+        # Layer 3: Scrape candidates
+        logger.info("Scraping candidates...")
+        candidates_data = self._scrape_candidates(constituencies_data)
+        self.candidates_data = candidates_data
+
         # Save all data
         self._save_all_data()
 
@@ -190,12 +195,67 @@ class LokSabhaScraper:
                         a_tag = cols[1].find("a")
                         consituency_name = a_tag.text.strip().split("(")[0] if a_tag else cols[1].text.strip().split("(")[0]
                         link = a_tag["href"] if a_tag and a_tag.has_attr("href") else None
+
+                        state_constituency_id = link.split("-")[-1].split(".")[0]
+                        state_id = state_constituency_id[:3]
+                        constituency_id = state_constituency_id[3:]
                         constituencies_data.append({
+                            "id": constituency_id,
                             "name": consituency_name,
-                            "url": link
+                            "state_id": state_id
                         })
 
         return constituencies_data
+
+    
+    def _scrape_candidates(self, constituencies_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Scrape candidate data from constituency pages."""
+        candidates_data = self._discover_candidate_details(constituencies_data)
+
+        return candidates_data
+    
+    def _discover_candidate_details(self, constituencies_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Discover candidate details from constituency pages."""
+        candidates_data = []
+
+        for constituency in constituencies_data:
+            constituency_id = constituency["id"]
+            constituency_name = constituency["name"]
+
+            url = self._generate_constituency_page_link(constituency_id)
+            response = get_with_retry(url, referer=self.base_url)
+            if not response:
+                logger.warning(f"Could not fetch constituency page for {constituency_name}")
+                continue
+
+            soup = BeautifulSoup(response.content, "html.parser")
+            table = soup.find("table", {"class": "table"})
+            if not table:
+                logger.warning(f"No constituency table found on {constituency_name} page")
+                continue
+
+            tbody = table.find("tbody")
+            if tbody:
+                rows = tbody.find_all("tr")
+                for row in rows:
+                    cols = row.find_all("td")
+                    if len(cols) >= 1:
+                        a_tag = cols[1].find("a")
+                        candidate_name = a_tag.text.strip().split("(")[0] if a_tag else cols[1].text.strip().split("(")[0]  
+                        candidate_party_id = cols[2].text.strip()
+                        candidate_status = cols[3].text.strip()
+                        candidate_image = cols[6].find("img")["src"] if cols[6].find("img") else None
+                        candidates_data.append({
+                            "id": self._generate_uuid(),
+                            "name": candidate_name,
+                            "party_id": candidate_party_id,
+                            "constituency_id": constituency_id,
+                            "status": candidate_status,
+                            "type": "MP",
+                            "image_url": candidate_image
+                        })
+
+        return candidates_data
 
     def _save_all_data(self) -> None:
         """Save all scraped data to JSON files in proper folder structure."""
