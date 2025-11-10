@@ -8,6 +8,9 @@ from pydantic import BaseModel, Field
 class Constituency(BaseModel):
     """Constituency model matching existing JSON structure"""
 
-    id: str = Field(alias="id")
-    name: str = Field(alias="name")
-    state_id: str = Field(alias="state_id")
+    id: str
+    name: str
+    state_id: str
+
+    class Config:
+        populate_by_name = True

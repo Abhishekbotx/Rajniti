@@ -14,31 +14,17 @@ class CandidateStatus(str, Enum):
 
 
 class CandidateType(str, Enum):
-    MLA = "MLA"
     MP = "MP"
 
 
 class Candidate(BaseModel):
-    """Base candidate model"""
+    """Lok Sabha candidate model"""
 
-    id: Optional[str] = None
+    id: str
     name: str
     party_id: str
     constituency_id: str
+    state_id: str
     image_url: Optional[str] = None
-    status: Optional[CandidateStatus] = None
-    type: Optional[CandidateType] = None
-
-
-class LokSabhaCandidate(Candidate):
-    """Lok Sabha candidate model"""
-
-    state_id: Optional[str] = None
+    status: CandidateStatus
     type: CandidateType = CandidateType.MP
-
-
-class AssemblyCandidate(Candidate):
-    """Assembly candidate model (Vidhan Sabha)"""
-
-    state_id: Optional[str] = None
-    type: CandidateType = CandidateType.MLA
