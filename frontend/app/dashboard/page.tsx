@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 // Types for our API data
@@ -37,7 +38,6 @@ interface Party {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 export default function Dashboard() {
-    const [elections, setElections] = useState<Election[]>([]);
     const [selectedElection, setSelectedElection] = useState<Election | null>(null);
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [parties, setParties] = useState<Party[]>([]);
@@ -64,7 +64,6 @@ export default function Dashboard() {
             const response = await fetch(`${API_BASE_URL}/elections`);
             const data = await response.json();
             if (data.success) {
-                setElections(data.data);
                 if (data.data.length > 0) {
                     setSelectedElection(data.data[0]);
                 }
@@ -85,7 +84,13 @@ export default function Dashboard() {
             const data = await response.json();
             if (data.success && data.data.parties) {
                 // Map the API response to our Party interface
-                const mappedParties = data.data.parties.slice(0, 10).map((p: any) => ({
+                interface PartyApiResponse {
+                    name: string;
+                    short_name: string;
+                    seats_won: number;
+                    symbol: string;
+                }
+                const mappedParties = data.data.parties.slice(0, 10).map((p: PartyApiResponse) => ({
                     party_name: p.name,
                     party_short_name: p.short_name,
                     total_seats: p.seats_won,
@@ -166,12 +171,12 @@ export default function Dashboard() {
                             <div className="text-2xl font-bold">🗳️</div>
                             <span className="text-xl font-bold text-gray-900">Rajniti Dashboard</span>
                         </div>
-                        <a
+                        <Link
                             href="/"
                             className="text-gray-600 hover:text-orange-600 transition-colors font-semibold"
                         >
                             ← Home
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </header>
@@ -239,6 +244,7 @@ export default function Dashboard() {
                                         >
                                             <div className="flex items-center gap-4">
                                                 {candidate.image_url && (
+                                                    // eslint-disable-next-line @next/next/no-img-element
                                                     <img
                                                         src={candidate.image_url}
                                                         alt={candidate.name}
