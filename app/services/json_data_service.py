@@ -1,8 +1,8 @@
 """
-JSON Data Service Implementation
+JSON Data Service Implementation - Lok Sabha Only
 
 Reads data from existing JSON files in the app/data directory.
-This can be easily replaced with a database service later.
+Optimized for Lok Sabha 2024 election data.
 """
 
 import json
@@ -13,17 +13,20 @@ from app.models import Constituency, Election, ElectionType, Party
 
 from .data_service import DataService
 
-
 class JsonDataService(DataService):
-    """JSON file-based data service"""
+    """JSON file-based data service for Lok Sabha data only"""
 
     def __init__(self):
         self.data_root = Path("app/data")
         self._elections_cache = None
-        self._data_cache = {}
+        self._candidates_cache = None
+        self._parties_cache = None
+        self._constituencies_cache = None
+        self._parties_by_id_cache = None
+        self._constituencies_by_id_cache = None
 
     def get_elections(self) -> List[Election]:
-        """Get all available elections"""
+        """Get all available elections (only Lok Sabha 2024)"""
         if self._elections_cache is None:
             self._elections_cache = [
                 Election(
@@ -31,23 +34,7 @@ class JsonDataService(DataService):
                     name="Lok Sabha General Elections 2024",
                     type=ElectionType.LOK_SABHA,
                     year=2024,
-                ),
-                Election(
-                    id="delhi-assembly-2025",
-                    name="Delhi Legislative Assembly Elections 2025",
-                    type=ElectionType.VIDHAN_SABHA,
-                    year=2025,
-                    state="Delhi",
-                    state_code="DL",
-                ),
-                Election(
-                    id="maharashtra-assembly-2024",
-                    name="Maharashtra Legislative Assembly Elections 2024",
-                    type=ElectionType.VIDHAN_SABHA,
-                    year=2024,
-                    state="Maharashtra",
-                    state_code="MH",
-                ),
+                )
             ]
         return self._elections_cache
 
@@ -60,172 +47,184 @@ class JsonDataService(DataService):
         return None
 
     def _load_json_file(self, file_path: Path) -> List[Dict[str, Any]]:
-        """Load data from JSON file with caching"""
-        cache_key = str(file_path)
-        if cache_key not in self._data_cache:
-            try:
-                if file_path.exists():
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        self._data_cache[cache_key] = json.load(f)
-                else:
-                    self._data_cache[cache_key] = []
-            except Exception as e:
-                print(f"Error loading {file_path}: {e}")
-                self._data_cache[cache_key] = []
-        return self._data_cache[cache_key]
+        """Load data from JSON file"""
+        try:
+            if file_path.exists():
+                with open(file_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            else:
+                print(f"File not found: {file_path}")
+                return []
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+            return []
 
     def get_candidates(self, election_id: str) -> List[Dict[str, Any]]:
-        """Get all candidates for an election"""
-        election = self.get_election(election_id)
-        if not election:
+        """Get all candidates for Lok Sabha 2024"""
+        if election_id != "lok-sabha-2024":
             return []
 
-        if election.type == ElectionType.LOK_SABHA:
+        if self._candidates_cache is None:
             file_path = (
-                self.data_root / "lok_sabha" / f"{election_id}" / "candidates.json"
+                self.data_root / "lok_sabha" / "lok-sabha-2024" / "candidates.json"
             )
-        else:
-            if election.state_code == "DL":
-                file_path = (
-                    self.data_root
-                    / "vidhan_sabha"
-                    / "DL_2025_ASSEMBLY"
-                    / "candidates.json"
-                )
-            elif election.state_code == "MH":
-                file_path = (
-                    self.data_root / "vidhan_sabha" / "MH_2024" / "candidates.json"
-                )
-            else:
-                return []
+            self._candidates_cache = self._load_json_file(file_path)
 
-        return self._load_json_file(file_path)
+        return self._candidates_cache
 
     def get_parties(self, election_id: str) -> List[Party]:
-        """Get all parties for an election"""
-        election = self.get_election(election_id)
-        if not election:
+        """Get all parties for Lok Sabha 2024"""
+        if election_id != "lok-sabha-2024":
             return []
 
-        if election.type == ElectionType.LOK_SABHA:
-            file_path = self.data_root / "lok_sabha" / f"{election_id}" / "parties.json"
-        else:
-            if election.state_code == "DL":
-                file_path = (
-                    self.data_root
-                    / "vidhan_sabha"
-                    / "DL_2025_ASSEMBLY"
-                    / "parties.json"
-                )
-            elif election.state_code == "MH":
-                file_path = self.data_root / "vidhan_sabha" / "MH_2024" / "parties.json"
-            else:
-                return []
+        if self._parties_cache is None:
+            file_path = self.data_root / "lok_sabha" / "lok-sabha-2024" / "parties.json"
+            data = self._load_json_file(file_path)
+            self._parties_cache = [Party(**party_data) for party_data in data]
 
-        data = self._load_json_file(file_path)
-        return [Party(**party_data) for party_data in data]
+        return self._parties_cache
 
     def get_constituencies(self, election_id: str) -> List[Constituency]:
-        """Get all constituencies for an election"""
-        election = self.get_election(election_id)
-        if not election:
+        """Get all constituencies for Lok Sabha 2024"""
+        if election_id != "lok-sabha-2024":
             return []
 
-        if election.type == ElectionType.LOK_SABHA:
+        if self._constituencies_cache is None:
             file_path = (
-                self.data_root / "lok_sabha" / f"{election_id}" / "constituencies.json"
+                self.data_root / "lok_sabha" / "lok-sabha-2024" / "constituencies.json"
             )
-        else:
-            if election.state_code == "DL":
-                file_path = (
-                    self.data_root
-                    / "vidhan_sabha"
-                    / "DL_2025_ASSEMBLY"
-                    / "constituencies.json"
-                )
-            elif election.state_code == "MH":
-                file_path = (
-                    self.data_root / "vidhan_sabha" / "MH_2024" / "constituencies.json"
-                )
-            else:
-                return []
+            data = self._load_json_file(file_path)
+            self._constituencies_cache = [
+                Constituency(**const_data) for const_data in data
+            ]
 
-        data = self._load_json_file(file_path)
-        return [Constituency(**const_data) for const_data in data]
+        return self._constituencies_cache
+
+    def _get_parties_by_id(self, election_id: str) -> Dict[str, Party]:
+        """Get parties indexed by ID for fast lookup"""
+        if self._parties_by_id_cache is None:
+            parties = self.get_parties(election_id)
+            self._parties_by_id_cache = {party.id: party for party in parties}
+        return self._parties_by_id_cache
+
+    def _get_constituencies_by_id(
+        self, election_id: str
+    ) -> Dict[str, Constituency]:
+        """Get constituencies indexed by ID for fast lookup"""
+        if self._constituencies_by_id_cache is None:
+            constituencies = self.get_constituencies(election_id)
+            self._constituencies_by_id_cache = {
+                const.id: const for const in constituencies
+            }
+        return self._constituencies_by_id_cache
+
+    def enrich_candidate_data(
+        self, candidate: Dict[str, Any], election_id: str
+    ) -> Dict[str, Any]:
+        """Enrich candidate data with party and constituency details"""
+        enriched = candidate.copy()
+
+        # Add election_id
+        enriched["election_id"] = election_id
+
+        # Add party details
+        parties_by_id = self._get_parties_by_id(election_id)
+        party_id = candidate.get("party_id")
+        if party_id and party_id in parties_by_id:
+            party = parties_by_id[party_id]
+            enriched["party_name"] = party.name
+            enriched["party_short_name"] = party.short_name
+            enriched["party_symbol"] = party.symbol
+        else:
+            enriched["party_name"] = "INDEPENDENT" if party_id == "UNKNOWN" else "Unknown"
+            enriched["party_short_name"] = "IND" if party_id == "UNKNOWN" else "UNK"
+            enriched["party_symbol"] = ""
+
+        # Add constituency details
+        constituencies_by_id = self._get_constituencies_by_id(election_id)
+        constituency_id = candidate.get("constituency_id")
+        if constituency_id and constituency_id in constituencies_by_id:
+            constituency = constituencies_by_id[constituency_id]
+            enriched["constituency_name"] = constituency.name
+            enriched["constituency_state_id"] = constituency.state_id
+        else:
+            enriched["constituency_name"] = "Unknown"
+            enriched["constituency_state_id"] = ""
+
+        return enriched
 
     def search_candidates(
         self, query: str, election_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Search candidates by name, party, or constituency"""
+        if election_id and election_id != "lok-sabha-2024":
+            return []
+
+        candidates = self.get_candidates("lok-sabha-2024")
         results = []
-        elections = (
-            [self.get_election(election_id)] if election_id else self.get_elections()
-        )
+        query_lower = query.lower()
 
-        for election in elections:
-            if not election:
-                continue
+        for candidate in candidates:
+            # Enrich candidate data first
+            enriched_candidate = self.enrich_candidate_data(
+                candidate, "lok-sabha-2024"
+            )
 
-            candidates = self.get_candidates(election.id)
-            query_lower = query.lower()
-
-            for candidate in candidates:
-                # Check different field names based on data structure
-                name_field = candidate.get("candidate_name") or candidate.get(
-                    "Name", ""
-                )
-                party_field = candidate.get("Party", "")
-                constituency_field = candidate.get("constituency", "") or candidate.get(
-                    "Constituency Code", ""
-                )
-
-                if (
-                    query_lower in name_field.lower()
-                    or query_lower in party_field.lower()
-                    or query_lower in constituency_field.lower()
-                ):
-                    candidate_with_election = candidate.copy()
-                    candidate_with_election["election_id"] = election.id
-                    results.append(candidate_with_election)
+            # Search in multiple fields
+            if (
+                query_lower in enriched_candidate.get("name", "").lower()
+                or query_lower in enriched_candidate.get("party_name", "").lower()
+                or query_lower
+                in enriched_candidate.get("constituency_name", "").lower()
+                or query_lower in enriched_candidate.get("state_name", "").lower()
+            ):
+                results.append(enriched_candidate)
 
         return results
 
     def get_candidate_by_id(
         self, candidate_id: str, election_id: str
     ) -> Optional[Dict[str, Any]]:
-        """Get a specific candidate by UUID or name (for backward compatibility)"""
+        """Get a specific candidate by ID"""
+        if election_id != "lok-sabha-2024":
+            return None
+
         candidates = self.get_candidates(election_id)
 
-        # First, try to match by UUID
         for candidate in candidates:
-            if (
-                candidate.get("id") == candidate_id
-                or candidate.get("ID") == candidate_id
-            ):
-                return candidate
-
-        # Fallback to name-based matching for backward compatibility
-        for candidate in candidates:
-            name_field = candidate.get("candidate_name") or candidate.get("Name", "")
-            if name_field.replace(" ", "_").lower() == candidate_id.lower():
-                return candidate
+            if candidate.get("id") == candidate_id:
+                return self.enrich_candidate_data(candidate, election_id)
 
         return None
 
     def get_party_by_name(self, party_name: str, election_id: str) -> Optional[Party]:
-        """Get a specific party"""
+        """Get a specific party by name"""
+        if election_id != "lok-sabha-2024":
+            return None
+
         parties = self.get_parties(election_id)
+        party_name_lower = party_name.lower()
+
         for party in parties:
-            if party.party_name.lower() == party_name.lower():
+            if (
+                party.name.lower() == party_name_lower
+                or party.short_name.lower() == party_name_lower
+            ):
                 return party
+
         return None
 
     def get_constituency_by_id(
         self, constituency_id: str, election_id: str
     ) -> Optional[Constituency]:
-        """Get a specific constituency"""
+        """Get a specific constituency by ID"""
+        if election_id != "lok-sabha-2024":
+            return None
+
         constituencies = self.get_constituencies(election_id)
+
         for constituency in constituencies:
-            if constituency.constituency_id.lower() == constituency_id.lower():
+            if constituency.id == constituency_id:
                 return constituency
+
         return None
