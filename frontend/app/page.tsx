@@ -1,3 +1,5 @@
+import PreambleSection from '@/components/PreambleSection'
+
 export default function Home() {
     return (
         <div className='min-h-screen bg-gradient-to-b from-orange-50 via-white to-green-50'>
@@ -167,6 +169,9 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+
+            {/* We The People of India - Preamble Section */}
+            <PreambleSection />
 
             {/* Contribute Section */}
             <section
