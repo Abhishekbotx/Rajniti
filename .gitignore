@@ -143,3 +143,15 @@ logs/
 *.log
 *.sqlite3
 *.db
+
+# Node.js / Next.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+.vercel
+.turbo
+*.tsbuildinfo
+next-env.d.ts
