@@ -44,6 +44,75 @@ class LokSabhaScraper:
         """Generate a unique UUID for a candidate."""
         return str(uuid.uuid4())
 
+    def _get_party_id_by_name(self, party_name: str) -> str:
+        """
+        Convert party name to party ID by looking up in parties_data.
+        
+        Args:
+            party_name: Full party name to search for
+            
+        Returns:
+            Party ID if found, otherwise returns 'UNKNOWN'
+        """
+        if not party_name:
+            return "UNKNOWN"
+        
+        # Normalize the input party name for comparison
+        party_name_normalized = party_name.strip().lower()
+        
+        for party in self.parties_data:
+            # Check against both full name and short name
+            if (party["name"].strip().lower() == party_name_normalized or 
+                party["short_name"].strip().lower() == party_name_normalized):
+                return party["id"]
+        
+        logger.warning(f"Party not found: {party_name}")
+        return "UNKNOWN"
+
+    def _get_constituency_id_by_name(self, constituency_name: str, state_id: str = None) -> str:
+        """
+        Convert constituency name to constituency ID by looking up in constituencies_data.
+        
+        Args:
+            constituency_name: Full constituency name to search for
+            state_id: Optional state ID to narrow down the search
+            
+        Returns:
+            Constituency ID if found, otherwise returns 'UNKNOWN'
+        """
+        if not constituency_name:
+            return "UNKNOWN"
+        
+        # Normalize the input constituency name for comparison
+        constituency_name_normalized = constituency_name.strip().lower()
+        
+        for constituency in self.constituencies_data:
+            # If state_id is provided, filter by state
+            if state_id and constituency.get("state_id") != state_id:
+                continue
+            
+            if constituency["name"].strip().lower() == constituency_name_normalized:
+                return constituency["id"]
+        
+        logger.warning(f"Constituency not found: {constituency_name}")
+        return "UNKNOWN"
+
+    def _get_party_by_id(self, party_id: str) -> Dict[str, Any]:
+        """
+        Get party details by ID.
+        
+        Args:
+            party_id: Party ID to search for
+            
+        Returns:
+            Party dictionary if found, otherwise returns empty dict
+        """
+        for party in self.parties_data:
+            if party["id"] == party_id:
+                return party
+        
+        return {}
+
     def _generate_party_page_link(self, party_id: str) -> str:
         """Generate a constituency page link from party id."""
         return f"{self.base_url}/partywisewinresultState-{party_id}.htm"
@@ -241,6 +310,7 @@ class LokSabhaScraper:
             state_id = constituency["state_id"]
 
             url = self._generate_constituency_page_link(state_id, constituency_id)
+            print("URL", url)
             response = get_with_retry(url, referer=self.base_url)
             if not response:
                 logger.warning(
@@ -249,40 +319,75 @@ class LokSabhaScraper:
                 continue
 
             soup = BeautifulSoup(response.content, "html.parser")
-            table = soup.find("table", {"class": "table"})
-            if not table:
+            
+            # Find all candidate boxes
+            candidate_boxes = soup.find_all("div", {"class": "cand-box"})
+            if not candidate_boxes:
                 logger.warning(
-                    f"No constituency table found on {constituency_name} page"
+                    f"No candidate boxes found on {constituency_name} page"
                 )
                 continue
 
-            tbody = table.find("tbody")
-            if tbody:
-                rows = tbody.find_all("tr")
-                for row in rows:
-                    cols = row.find_all("td")
-                    if len(cols) >= 7:  # Ensure we have enough columns
-                        a_tag = cols[1].find("a")
-                        candidate_name = (
-                            a_tag.text.strip() if a_tag else cols[1].text.strip()
-                        )
-                        candidate_party_id = cols[2].text.strip()
-                        candidate_status = cols[3].text.strip()
-                        candidate_image = (
-                            cols[6].find("img")["src"] if cols[6].find("img") else None
-                        )
-                        candidates_data.append(
-                            {
-                                "id": self._generate_uuid(),
-                                "name": candidate_name,
-                                "party_id": candidate_party_id,
-                                "constituency_id": constituency_id,
-                                "state_id": state_id,
-                                "status": candidate_status,
-                                "type": "MP",
-                                "image_url": candidate_image,
-                            }
-                        )
+            # Parse each candidate
+            for cand_box in candidate_boxes:
+                try:
+                    # Extract image
+                    figure = cand_box.find("figure")
+                    candidate_image = None
+                    if figure:
+                        img_tag = figure.find("img")
+                        if img_tag and img_tag.has_attr("src"):
+                            candidate_image = img_tag["src"]
+                    
+                    # Extract candidate info section
+                    cand_info = cand_box.find("div", {"class": "cand-info"})
+                    if not cand_info:
+                        continue
+                    
+                    # Extract status (won/lost/trailing)
+                    status_div = cand_info.find("div", {"class": "status"})
+                    candidate_status = "UNKNOWN"
+                    if status_div:
+                        # Status text is in a nested div with text-transform: capitalize
+                        status_text_div = status_div.find("div", {"style": lambda x: x and "text-transform" in x})
+                        if status_text_div:
+                            candidate_status = status_text_div.text.strip().upper()
+                    
+                    # Extract name and party
+                    nme_prty = cand_info.find("div", {"class": "nme-prty"})
+                    if not nme_prty:
+                        continue
+                    
+                    candidate_name_tag = nme_prty.find("h5")
+                    candidate_party_name_tag = nme_prty.find("h6")
+                    
+                    if not candidate_name_tag or not candidate_party_name_tag:
+                        continue
+                    
+                    candidate_name = candidate_name_tag.text.strip()
+                    candidate_party_name = candidate_party_name_tag.text.strip()
+                    
+                    # Convert party name to party ID
+                    candidate_party_id = self._get_party_id_by_name(candidate_party_name)
+                    
+                    # Add candidate to data
+                    candidates_data.append(
+                        {
+                            "id": self._generate_uuid(),
+                            "name": candidate_name,
+                            "party_id": candidate_party_id,
+                            "constituency_id": constituency_id,
+                            "state_id": state_id,
+                            "status": candidate_status,
+                            "type": "MP",
+                            "image_url": candidate_image,
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Error parsing candidate in {constituency_name}: {str(e)}"
+                    )
+                    continue
 
         logger.info(f"Scraped {len(candidates_data)} candidates")
         return candidates_data
