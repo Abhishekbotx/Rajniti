@@ -1,23 +1,17 @@
 # Netlify deployment configuration for Rajniti Frontend
 [build]
-  base = "frontend/"
   command = "npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_VERSION = "10"
 
-# Redirect API calls to GCP backend
+# Redirect API calls to backend
 [[redirects]]
   from = "/api/*"
-  to = "https://YOUR-GCP-BACKEND-URL.run.app/api/:splat"
+  to = "https://rajiniti-backend-dev-572964795629.asia-south2.run.app/api/v1/:splat"
   status = 200
-  force = true
-
-# Next.js specific configuration
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+  force = false
 
 # Headers for security
 [[headers]]
@@ -27,6 +21,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Access-Control-Allow-Origin = "*"
 
 # Caching for static assets
 [[headers]]
