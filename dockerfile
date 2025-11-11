@@ -1,26 +1,34 @@
-# Simple Dockerfile for Rajniti Election Data API
+# Production Dockerfile for Rajniti Election Data API - GCP Deployment
 FROM python:3.9-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    FLASK_ENV=production \
+    FLASK_DEBUG=False
 
 # Set work directory
 WORKDIR /app
+
+# Install system dependencies if needed
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY app/ ./app/
+COPY run.py .
 
-# Expose port
+# Create a non-root user for security
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Expose port (GCP Cloud Run uses PORT env variable)
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8080/api/v1/health')"
-
-# Run application
-CMD ["python", "run.py"]
+# Use gunicorn for production
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 'app:create_app()'

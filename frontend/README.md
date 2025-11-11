@@ -119,7 +119,7 @@ Then deploy:
 gcloud run deploy rajniti-frontend \
   --source . \
   --platform managed \
-  --region us-central1 \
+  --region asia-south2 \
   --allow-unauthenticated
 ```
 
