@@ -3,6 +3,7 @@ Tests for Party database model.
 """
 
 import pytest
+
 from app.database import get_db_session, init_db
 from app.database.models import Party
 
@@ -32,9 +33,9 @@ def test_party_create(setup_database, clean_session):
         id="test-1",
         name="Test Party",
         short_name="TP",
-        symbol="Test Symbol"
+        symbol="Test Symbol",
     )
-    
+
     assert party.id == "test-1"
     assert party.name == "Test Party"
     assert party.short_name == "TP"
@@ -49,9 +50,9 @@ def test_party_get_by_id(setup_database, clean_session):
         id="test-2",
         name="Test Party 2",
         short_name="TP2",
-        symbol=""
+        symbol="",
     )
-    
+
     # Retrieve it
     party = Party.get_by_id(clean_session, "test-2")
     assert party is not None
@@ -66,9 +67,9 @@ def test_party_get_by_name(setup_database, clean_session):
         id="test-3",
         name="Unique Party Name",
         short_name="UPN",
-        symbol=""
+        symbol="",
     )
-    
+
     # Retrieve it
     party = Party.get_by_name(clean_session, "Unique Party Name")
     assert party is not None
@@ -83,12 +84,12 @@ def test_party_update(setup_database, clean_session):
         id="test-4",
         name="Old Name",
         short_name="ON",
-        symbol="Old Symbol"
+        symbol="Old Symbol",
     )
-    
+
     # Update it
     party.update(clean_session, name="New Name", symbol="New Symbol")
-    
+
     # Verify update
     updated_party = Party.get_by_id(clean_session, "test-4")
     assert updated_party.name == "New Name"
@@ -103,11 +104,11 @@ def test_party_bulk_create(setup_database, clean_session):
         {"id": "bulk-2", "name": "Bulk Party 2", "short_name": "BP2", "symbol": ""},
         {"id": "bulk-3", "name": "Bulk Party 3", "short_name": "BP3", "symbol": ""},
     ]
-    
+
     parties = Party.bulk_create(clean_session, parties_data)
-    
+
     assert len(parties) == 3
-    
+
     # Verify they were created
     party1 = Party.get_by_id(clean_session, "bulk-1")
     assert party1 is not None

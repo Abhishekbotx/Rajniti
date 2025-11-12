@@ -30,12 +30,12 @@ SessionLocal = sessionmaker(
 def init_db():
     """
     Initialize database tables.
-    
+
     Creates all tables defined in models.
     """
     from .base import Base
-    
+
     # Import all models to register them
     from .models import Candidate, Constituency, Party  # noqa: F401
-    
+
     Base.metadata.create_all(bind=engine)
