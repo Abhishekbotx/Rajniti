@@ -723,6 +723,24 @@ DATABASE_URL=postgresql://user:password@localhost:5432/rajniti  # PostgreSQL con
 PERPLEXITY_API_KEY=your-perplexity-api-key-here
 ```
 
+#### Common Errors
+
+1. **"Perplexity API key not provided"**
+   - Solution: Set `PERPLEXITY_API_KEY` environment variable or add to `.env` file
+
+2. **"Module not found: perplexityai"**
+   - Solution: Run `pip install -r requirements.txt`
+
+3. **Rate limit exceeded**
+   - Solution: Wait a moment and retry, or upgrade your Perplexity API plan
+
+### **📚 Resources**
+
+- [Perplexity API Documentation](https://docs.perplexity.ai/)
+- [API Quickstart Guide](https://docs.perplexity.ai/guides/perplexity-sdk)
+- [Search API Guide](https://docs.perplexity.ai/guides/search-guide)
+- [Location Filter Guide](https://docs.perplexity.ai/guides/user-location-filter-guide)
+
 ---
 
 ## 🗄️ **Database**
