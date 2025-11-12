@@ -52,36 +52,6 @@ def get_election(election_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-
-@api_bp.route("/elections/<election_id>/results", methods=["GET"])
-def get_election_results(election_id):
-    """Get election results"""
-    try:
-        limit = request.args.get("limit", type=int)
-        results = election_controller.get_election_results(election_id, limit)
-
-        if not results:
-            return jsonify({"success": False, "error": "Election not found"}), 404
-
-        return jsonify({"success": True, "data": results})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@api_bp.route("/elections/<election_id>/winners", methods=["GET"])
-def get_election_winners(election_id):
-    """Get election winners"""
-    try:
-        winners = election_controller.get_election_winners(election_id)
-
-        if not winners:
-            return jsonify({"success": False, "error": "Election not found"}), 404
-
-        return jsonify({"success": True, "data": winners})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
 # ==================== CANDIDATE ROUTES ====================
 
 
