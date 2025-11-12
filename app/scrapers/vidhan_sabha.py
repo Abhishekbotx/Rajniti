@@ -417,18 +417,20 @@ class VidhanSabhaScraper:
                 img_src = img_tag["src"].strip()
                 if img_src and not img_src.startswith("http"):
                     img_src = f"{self.base_url}/{img_src}"
-            
-            candidates.append({
-                "uuid": self._generate_uuid(),
-                "Constituency Code": constituency_code,
-                "Name": name,
-                "Party": party,
-                "Status": status,
-                "Votes": votes,
-                "Margin": margin,
-                "Image URL": img_src
-            })
-        
+
+            candidates.append(
+                {
+                    "uuid": self._generate_uuid(),
+                    "Constituency Code": constituency_code,
+                    "Name": name,
+                    "Party": party,
+                    "Status": status,
+                    "Votes": votes,
+                    "Margin": margin,
+                    "Image URL": img_src,
+                }
+            )
+
         return candidates
 
     def _save_all_data(self) -> None:
