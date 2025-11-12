@@ -11,6 +11,17 @@
 
 A simple, clean REST API serving Indian Election Commission data from JSON files. Built with minimal Flask setup for easy deployment and scraping capabilities. Includes a beautiful, India-themed landing page built with Next.js.
 
+## 🚢 Quick Deployment
+
+| Platform | Type | Command | Status |
+|----------|------|---------|--------|
+| **Netlify** | Frontend | `netlify deploy --prod` | ✅ Ready |
+| **GCP Cloud Run** | Backend | `gcloud builds submit` | ✅ Ready |
+| **Docker** | Full Stack | `docker-compose up -d` | ✅ Ready |
+| **Vercel** | Frontend | `vercel --prod` | ✅ Ready |
+
+👉 **Jump to**: [Netlify Deployment Guide](#deploy-to-netlify-) • [Backend Deployment](#deployment) • [Docker Setup](#option-1-docker-recommended)
+
 ---
 
 ## 🌟 **Key Features**
@@ -125,22 +136,100 @@ npm run dev
 # Visit http://localhost:3000
 ```
 
-### **Deploy the Landing Page**
+### **Deploy to Netlify** 🚀
 
-The landing page can be easily deployed to various platforms:
+Deploy the Rajniti frontend to Netlify in just a few minutes!
 
-**Vercel (Recommended):**
+#### **Step 1: Push to Git Repository**
+
+```bash
+# Initialize git (if not already done)
+git init
+git add .
+git commit -m "Initial commit"
+
+# Push to GitHub
+git remote add origin https://github.com/your-username/rajniti.git
+git push -u origin main
+```
+
+#### **Step 2: Deploy via Netlify Dashboard**
+
+1. **Sign up** at [netlify.com](https://app.netlify.com/signup)
+2. Click **"Add new site"** → **"Import an existing project"**
+3. Connect your **GitHub/GitLab/Bitbucket** account
+4. Select your **rajniti repository**
+5. Configure build settings:
+   - **Base directory**: `frontend`
+   - **Build command**: `npm run build`
+   - **Publish directory**: `.next`
+   - **Framework**: Next.js (auto-detected)
+6. Click **"Deploy site"**
+
+#### **Step 3: Add Environment Variables (Optional)**
+
+If you have a backend API, add this environment variable in Netlify:
+
+1. Go to **Site settings** → **Environment variables**
+2. Add variable:
+   - **Key**: `NEXT_PUBLIC_API_URL`
+   - **Value**: `https://your-backend-api.com`
+
+#### **Step 4: Update Backend URL (If applicable)**
+
+If using a separate backend, edit `frontend/netlify.toml`:
+
+```toml
+[[redirects]]
+  from = "/api/*"
+  to = "https://your-backend-url.run.app/api/:splat"
+  status = 200
+  force = false
+```
+
+#### **Deploy via Netlify CLI**
+
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Login
+netlify login
+
+# Navigate to frontend
+cd frontend
+
+# Deploy (follow prompts)
+netlify deploy --prod
+```
+
+#### **Continuous Deployment**
+
+Once connected to GitHub, Netlify automatically deploys when you push to `main`:
+
+```bash
+git add .
+git commit -m "Update frontend"
+git push origin main
+# ✅ Netlify automatically rebuilds and deploys!
+```
+
+#### **Custom Domain (Optional)**
+
+1. Go to **Domain settings** in Netlify Dashboard
+2. Click **"Add custom domain"**
+3. Follow DNS configuration instructions
+
+---
+
+### **Alternative Deployment Options**
+
+**Vercel (Alternative to Netlify):**
 
 ```bash
 cd frontend
-vercel
+npx vercel --prod
 ```
-
-**Netlify:**
-
--   Set base directory to `frontend`
--   Build command: `npm run build`
--   Framework: Next.js (auto-detected)
 
 **GCP Cloud Run:**
 
@@ -148,7 +237,13 @@ vercel
 gcloud run deploy rajniti-frontend --source ./frontend
 ```
 
-For detailed deployment instructions, see [frontend/README.md](frontend/README.md)
+**Docker (Self-hosted):**
+
+```bash
+cd frontend
+docker build -t rajniti-frontend .
+docker run -p 3000:3000 rajniti-frontend
+```
 
 ---
 
