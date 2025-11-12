@@ -11,6 +11,11 @@ python-dotenv==1.0.0
 # Data validation (simple)
 pydantic==2.10.0
 
+# Database - PostgreSQL compatible (works with local and Supabase)
+SQLAlchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.13.0
+
 # Web scraping libraries
 # NOTE: httpx[http2] is REQUIRED - ECI website blocks HTTP/1.1 requests
 httpx[http2]==0.25.2
