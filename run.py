@@ -5,22 +5,26 @@ import logging
 import os
 
 from app import create_app
+from app.core.env_checker import check_environment_variables
 
 
 def main():
     """Main entry point for the development server."""
-    # Get environment
-    env = os.getenv("FLASK_ENV", "development")
-
-    # Create app with specified environment
-    app = create_app()
-
-    # Setup basic logging
+    # Setup basic logging first
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     logger = logging.getLogger("rajniti.server")
+
+    # Check environment variables on startup
+    check_environment_variables()
+
+    # Get environment
+    env = os.getenv("FLASK_ENV", "development")
+
+    # Create app with specified environment
+    app = create_app()
 
     # Server configuration
     host = os.getenv("FLASK_HOST", "0.0.0.0")
