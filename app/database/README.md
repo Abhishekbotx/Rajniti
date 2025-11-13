@@ -174,10 +174,11 @@ alembic history
 When you make changes to database models, follow this workflow:
 
 **Important**: Always commit migration files (`alembic/versions/*.py`) to git. These files are essential for:
-- Team collaboration (everyone needs the same migration history)
-- Production deployments (migrations must run in order)
-- Database schema version control
-- Rollback capabilities
+
+-   Team collaboration (everyone needs the same migration history)
+-   Production deployments (migrations must run in order)
+-   Database schema version control
+-   Rollback capabilities
 
 #### Step 1: Check Current Status
 
@@ -222,6 +223,232 @@ alembic upgrade head
 # Verify migration was applied
 alembic current
 ```
+
+#### Step 5: Verify Migration
+
+After applying a migration, verify it worked correctly:
+
+##### 5.1: Check Alembic Status
+
+```bash
+# Check current migration version
+alembic current
+# Should show the latest migration revision (e.g., 2b1da9ee1f5d (head))
+
+# View migration history
+alembic history
+# Should show all migrations including the one you just applied
+```
+
+##### 5.2: Verify Database Schema (Using psql)
+
+**Connect to Database:**
+
+```bash
+# Connect using connection string
+psql "postgresql://postgres:postgres@localhost:5432/rajniti"
+
+# Or if using environment variable
+psql $DATABASE_URL
+
+# Or connect step by step
+psql -U postgres -d rajniti
+```
+
+**List All Tables:**
+
+```sql
+-- List all tables in the database
+\dt
+
+-- Or get more details
+\dt+
+
+-- List tables with schema information
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+ORDER BY table_name;
+```
+
+**Check Table Structure:**
+
+```sql
+-- Describe a specific table (shows columns, types, constraints)
+\d constituencies
+
+-- Or get detailed information
+\d+ constituencies
+
+-- Get column information using SQL
+SELECT
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'constituencies'
+ORDER BY ordinal_position;
+```
+
+**View Table Data:**
+
+```sql
+-- View first 10 rows
+SELECT * FROM constituencies LIMIT 10;
+
+-- Count total rows
+SELECT COUNT(*) FROM constituencies;
+
+-- View specific columns
+SELECT id, original_id, name, state_id
+FROM constituencies
+LIMIT 5;
+
+-- Check for NULL values in new columns
+SELECT
+    COUNT(*) as total,
+    COUNT(original_id) as with_original_id,
+    COUNT(*) - COUNT(original_id) as missing_original_id
+FROM constituencies;
+```
+
+**Verify Migration-Specific Changes:**
+
+```sql
+-- Check if new columns exist
+SELECT column_name
+FROM information_schema.columns
+WHERE table_name = 'constituencies'
+  AND column_name IN ('original_id', 'id', 'name', 'state_id');
+
+-- Verify data was migrated correctly (if applicable)
+SELECT id, original_id, name, state_id
+FROM constituencies
+WHERE original_id IS NULL;  -- Should return 0 rows
+
+-- Check candidates table
+SELECT column_name
+FROM information_schema.columns
+WHERE table_name = 'candidates'
+  AND column_name IN ('original_constituency_id', 'constituency_id', 'state_id');
+
+-- Exit psql
+\q
+```
+
+##### 5.3: Verify Using Python
+
+```python
+from app.database import get_db_session
+from app.database.models import Constituency, Candidate
+from sqlalchemy import inspect, text
+
+# Verify table structure
+with get_db_session() as session:
+    # Check Constituency table columns
+    inspector = inspect(Constituency)
+    constituency_columns = [col.name for col in inspector.columns]
+    print("Constituency columns:", constituency_columns)
+
+    # Check Candidate table columns
+    inspector = inspect(Candidate)
+    candidate_columns = [col.name for col in inspector.columns]
+    print("Candidate columns:", candidate_columns)
+
+    # Count records
+    constituency_count = session.query(Constituency).count()
+    candidate_count = session.query(Candidate).count()
+    print(f"\nTotal constituencies: {constituency_count}")
+    print(f"Total candidates: {candidate_count}")
+
+    # View sample data
+    if constituency_count > 0:
+        sample = session.query(Constituency).first()
+        print(f"\nSample constituency:")
+        print(f"  id: {sample.id}")
+        print(f"  original_id: {sample.original_id}")
+        print(f"  name: {sample.name}")
+        print(f"  state_id: {sample.state_id}")
+
+print("\n✓ Migration verification complete!")
+```
+
+##### 5.4: Common Verification Queries
+
+**Check All Tables:**
+
+```sql
+-- List all tables with row counts
+SELECT
+    schemaname,
+    tablename,
+    (SELECT COUNT(*) FROM information_schema.columns
+     WHERE table_name = tablename) as column_count
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY tablename;
+```
+
+**Verify Foreign Key Relationships:**
+
+```sql
+-- Check foreign key constraints
+SELECT
+    tc.table_name,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+  ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+  ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+  AND tc.table_schema = 'public';
+```
+
+**Check Indexes:**
+
+```sql
+-- List all indexes
+SELECT
+    tablename,
+    indexname,
+    indexdef
+FROM pg_indexes
+WHERE schemaname = 'public'
+ORDER BY tablename, indexname;
+```
+
+**Data Integrity Checks:**
+
+```sql
+-- Verify no orphaned records (if foreign keys exist)
+SELECT COUNT(*) as orphaned_candidates
+FROM candidates c
+LEFT JOIN constituencies const ON c.constituency_id = const.id
+WHERE const.id IS NULL;
+
+-- Check for duplicate primary keys (should return 0)
+SELECT id, COUNT(*)
+FROM constituencies
+GROUP BY id
+HAVING COUNT(*) > 1;
+```
+
+##### 5.5: Quick Verification Checklist
+
+After running a migration, verify:
+
+-   [ ] `alembic current` shows the new migration revision
+-   [ ] New columns exist in the target table(s)
+-   [ ] Column data types are correct
+-   [ ] NOT NULL constraints are applied (if applicable)
+-   [ ] Existing data is preserved (if applicable)
+-   [ ] New columns are populated (if data migration was needed)
+-   [ ] No errors in application logs
+-   [ ] Application can query the updated tables successfully
 
 #### Common Errors and Solutions
 
@@ -439,6 +666,87 @@ class DbDataService(DataService):
             return Party.get_all(session)
 
     # Implement other DataService methods...
+```
+
+## Quick Reference: Database Operations
+
+### Common psql Commands
+
+```bash
+# Connect to database
+psql "postgresql://user:password@host:port/database"
+psql -U username -d database_name
+
+# List all databases
+\l
+
+# Connect to a specific database
+\c database_name
+
+# List all tables
+\dt
+
+# Describe a table structure
+\d table_name
+\d+ table_name  # More detailed
+
+# List all columns in a table
+\d+ table_name
+
+# Show table size
+\dt+ table_name
+
+# List all schemas
+\dn
+
+# Show current database
+SELECT current_database();
+
+# Show current user
+SELECT current_user;
+
+# Exit psql
+\q
+```
+
+### Common SQL Queries
+
+```sql
+-- Count rows in a table
+SELECT COUNT(*) FROM table_name;
+
+-- View all data (limit results)
+SELECT * FROM table_name LIMIT 10;
+
+-- View specific columns
+SELECT column1, column2 FROM table_name;
+
+-- Filter data
+SELECT * FROM table_name WHERE column_name = 'value';
+
+-- Sort results
+SELECT * FROM table_name ORDER BY column_name DESC;
+
+-- Group and aggregate
+SELECT state_id, COUNT(*)
+FROM constituencies
+GROUP BY state_id;
+
+-- Join tables
+SELECT c.name, p.name as party_name
+FROM candidates c
+JOIN parties p ON c.party_id = p.id
+LIMIT 10;
+```
+
+### Check Database Connection
+
+```bash
+# Test connection from command line
+psql $DATABASE_URL -c "SELECT version();"
+
+# Test using Python
+python -c "from app.database.config import get_database_url; print(get_database_url())"
 ```
 
 ## Troubleshooting

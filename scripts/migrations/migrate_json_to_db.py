@@ -85,6 +85,55 @@ def migrate_constituencies(
         return 0
 
 
+def normalize_candidate_status(status: str) -> str:
+    """
+    Normalize candidate status to valid enum value.
+    
+    The candidate_status enum only accepts "WON" or "LOST".
+    Empty strings and invalid values are normalized to "LOST".
+    
+    Args:
+        status: Status value from JSON data
+        
+    Returns:
+        Normalized status ("WON" or "LOST")
+    """
+    if not status or not status.strip():
+        return "LOST"
+    
+    status_upper = status.strip().upper()
+    if status_upper == "WON":
+        return "WON"
+    elif status_upper == "LOST":
+        return "LOST"
+    else:
+        # Handle "UNKNOWN" or any other invalid status
+        return "LOST"
+
+
+def normalize_candidates_data(candidates_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Normalize candidate data before migration.
+    
+    Ensures all required fields are present and valid enum values are used.
+    
+    Args:
+        candidates_data: List of candidate dictionaries from JSON
+        
+    Returns:
+        Normalized list of candidate dictionaries
+    """
+    normalized = []
+    for candidate in candidates_data:
+        normalized_candidate = candidate.copy()
+        # Normalize status to valid enum value
+        normalized_candidate["status"] = normalize_candidate_status(
+            candidate.get("status", "")
+        )
+        normalized.append(normalized_candidate)
+    return normalized
+
+
 def migrate_candidates(
     session, candidates_data: List[Dict[str, Any]], dry_run: bool = False
 ) -> int:
@@ -93,17 +142,28 @@ def migrate_candidates(
         f"\n{'[DRY RUN] ' if dry_run else ''}Migrating {len(candidates_data)} candidates..."
     )
 
+    # Normalize candidate data (handle empty/invalid status values)
+    normalized_candidates = normalize_candidates_data(candidates_data)
+    
+    # Count how many statuses were normalized
+    empty_status_count = sum(
+        1 for c in candidates_data 
+        if not c.get("status") or not c.get("status").strip()
+    )
+    if empty_status_count > 0:
+        print(f"  Note: Normalizing {empty_status_count} candidates with empty/invalid status to 'LOST'")
+
     if dry_run:
-        for cand in candidates_data[:5]:  # Show first 5 in dry run
-            print(f"  - Would create: {cand['name']} ({cand.get('party_id', 'N/A')})")
-        if len(candidates_data) > 5:
-            print(f"  - ... and {len(candidates_data) - 5} more")
-        return len(candidates_data)
+        for cand in normalized_candidates[:5]:  # Show first 5 in dry run
+            print(f"  - Would create: {cand['name']} ({cand.get('party_id', 'N/A')}) - Status: {cand.get('status', 'N/A')}")
+        if len(normalized_candidates) > 5:
+            print(f"  - ... and {len(normalized_candidates) - 5} more")
+        return len(normalized_candidates)
 
     try:
-        Candidate.bulk_create(session, candidates_data)
-        print(f"✓ Successfully migrated {len(candidates_data)} candidates")
-        return len(candidates_data)
+        Candidate.bulk_create(session, normalized_candidates)
+        print(f"✓ Successfully migrated {len(normalized_candidates)} candidates")
+        return len(normalized_candidates)
     except Exception as e:
         print(f"✗ Error migrating candidates: {e}")
         return 0
