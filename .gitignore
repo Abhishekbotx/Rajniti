@@ -144,6 +144,10 @@ logs/
 *.sqlite3
 *.db
 
+# Database migrations - DO NOT IGNORE
+# Migration files in alembic/versions/ should ALWAYS be committed to git
+# They are essential for team collaboration and production deployments
+
 # Node.js / Next.js
 node_modules/
 npm-debug.log*

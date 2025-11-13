@@ -25,7 +25,8 @@ class Candidate(Base):
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False, index=True)
     party_id = Column(String, nullable=False, index=True)
-    constituency_id = Column(String, nullable=False, index=True)
+    constituency_id = Column(String, nullable=False, index=True)  # unique_id reference
+    original_constituency_id = Column(String, nullable=True)  # Original ID for backward compatibility
     state_id = Column(String, nullable=False, index=True)
     image_url = Column(String, nullable=True)
     status = Column(SQLEnum("WON", "LOST", name="candidate_status"), nullable=False)
@@ -50,6 +51,7 @@ class Candidate(Base):
         status: str,
         type: str = "MP",
         image_url: Optional[str] = None,
+        original_constituency_id: Optional[str] = None,
     ) -> "Candidate":
         """
         Create a new candidate.
@@ -59,11 +61,12 @@ class Candidate(Base):
             id: Candidate ID
             name: Candidate name
             party_id: Party ID
-            constituency_id: Constituency ID
+            constituency_id: Constituency unique_id (format: "{id}-{state_id}")
             state_id: State ID code
             status: Candidate status (WON/LOST)
             type: Candidate type (MP/MLA), defaults to MP
             image_url: URL to candidate image (optional)
+            original_constituency_id: Original constituency ID for backward compatibility
 
         Returns:
             Created Candidate instance
@@ -73,6 +76,7 @@ class Candidate(Base):
             name=name,
             party_id=party_id,
             constituency_id=constituency_id,
+            original_constituency_id=original_constituency_id,
             state_id=state_id,
             status=status,
             type=type,
@@ -224,7 +228,8 @@ class Candidate(Base):
                 id=c["id"],
                 name=c["name"],
                 party_id=c["party_id"],
-                constituency_id=c["constituency_id"],
+                constituency_id=c.get("constituency_unique_id", c.get("constituency_id")),
+                original_constituency_id=c.get("constituency_id"),  # Keep original for compatibility
                 state_id=c["state_id"],
                 status=c["status"],
                 type=c.get("type", "MP"),

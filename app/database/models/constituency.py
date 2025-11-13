@@ -20,7 +20,8 @@ class Constituency(Base):
     __tablename__ = "constituencies"
 
     # Columns
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)  # unique_id (format: "{id}-{state_id}")
+    original_id = Column(String, nullable=False)  # Original constituency ID for scraping
     name = Column(String, nullable=False, index=True)
     state_id = Column(String, nullable=False, index=True)
 
@@ -33,22 +34,31 @@ class Constituency(Base):
 
     @classmethod
     def create(
-        cls, session: Session, id: str, name: str, state_id: str
+        cls, session: Session, id: str, name: str, state_id: str, original_id: str = None
     ) -> "Constituency":
         """
         Create a new constituency.
 
         Args:
             session: Database session
-            id: Constituency ID
+            id: Unique constituency ID (format: "{original_id}-{state_id}")
             name: Constituency name
             state_id: State ID code
+            original_id: Original constituency ID for scraping (defaults to extracting from id)
 
         Returns:
             Created Constituency instance
         """
+        # If original_id not provided, extract from id (assuming format "{id}-{state_id}")
+        if original_id is None:
+            if "-" in id:
+                original_id = id.split("-")[0]
+            else:
+                original_id = id
+        
         constituency = cls(
             id=id,
+            original_id=original_id,
             name=name,
             state_id=state_id,
         )
@@ -146,7 +156,8 @@ class Constituency(Base):
         """
         constituency_objects = [
             cls(
-                id=c["id"],
+                id=c.get("unique_id", c.get("id")),  # Use unique_id if available, fallback to id
+                original_id=c.get("id", c.get("original_id", "")),  # Original ID for scraping
                 name=c["name"],
                 state_id=c["state_id"],
             )

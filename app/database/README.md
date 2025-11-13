@@ -169,6 +169,119 @@ alembic current
 alembic history
 ```
 
+### Migration Workflow
+
+When you make changes to database models, follow this workflow:
+
+**Important**: Always commit migration files (`alembic/versions/*.py`) to git. These files are essential for:
+- Team collaboration (everyone needs the same migration history)
+- Production deployments (migrations must run in order)
+- Database schema version control
+- Rollback capabilities
+
+#### Step 1: Check Current Status
+
+```bash
+# Check if database is up to date
+alembic current
+
+# View migration history
+alembic history
+```
+
+#### Step 2: Create Migration
+
+```bash
+# Auto-generate migration from model changes
+alembic revision --autogenerate -m "description of changes"
+
+# This will create a migration file in alembic/versions/
+```
+
+**Important**: Review the generated migration file before applying it. You may need to:
+
+-   Add data migration logic for existing records
+-   Handle nullable columns properly (add as nullable first, populate data, then make NOT NULL)
+-   Add custom SQL for complex transformations
+
+#### Step 3: Review Migration File
+
+Always review the auto-generated migration file (`alembic/versions/XXXXX_description.py`):
+
+-   Check that all model changes are captured correctly
+-   Add data migration steps if needed (e.g., populating new columns from existing data)
+-   Ensure backward compatibility if removing columns
+-   Test the migration on a copy of production data if possible
+
+#### Step 4: Apply Migration
+
+```bash
+# Apply the migration
+alembic upgrade head
+
+# Verify migration was applied
+alembic current
+```
+
+#### Common Errors and Solutions
+
+**Error**: `Target database is not up to date`
+
+-   **Cause**: There's an unapplied migration
+-   **Solution**: Run `alembic upgrade head` first to apply pending migrations, then create new migrations
+
+**Error**: `Can't locate revision identified by 'XXXXX'`
+
+-   **Cause**: Migration history mismatch between database and files
+-   **Solution**: Check `alembic current` vs `alembic history` to identify the issue
+
+**Error**: Column already exists / Column does not exist
+
+-   **Cause**: Database schema doesn't match expected state
+-   **Solution**:
+    -   Check migration history: `alembic history`
+    -   Verify current state: `alembic current`
+    -   If needed, reset: `alembic downgrade base && alembic upgrade head` (⚠️ deletes all data)
+
+#### Handling Existing Data
+
+When adding new columns to existing tables with data:
+
+1. Add column as nullable first
+2. Populate data from existing columns or default values
+3. Make column NOT NULL if required
+
+Example migration pattern:
+
+```python
+def upgrade() -> None:
+    # Step 1: Add column as nullable
+    op.add_column('table_name', sa.Column('new_column', sa.String(), nullable=True))
+
+    # Step 2: Populate data
+    op.execute("""
+        UPDATE table_name
+        SET new_column = existing_column || '-suffix'
+        WHERE new_column IS NULL
+    """)
+
+    # Step 3: Make NOT NULL (if required)
+    op.alter_column('table_name', 'new_column', nullable=False)
+```
+
+#### Rollback Migration
+
+```bash
+# Rollback last migration
+alembic downgrade -1
+
+# Rollback to specific revision
+alembic downgrade <revision_id>
+
+# Rollback all migrations (⚠️ deletes all data)
+alembic downgrade base
+```
+
 ## Migrating JSON Data to Database
 
 A migration script is provided to import existing JSON data into the database.
