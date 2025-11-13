@@ -31,6 +31,7 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 | Feature                     | Description                                               |
 | --------------------------- | --------------------------------------------------------- |
 | 🚀 **Simple Flask API**     | Clean RESTful endpoints serving JSON data                 |
+| 💾 **Database Support**     | PostgreSQL/Supabase support with easy migration           |
 | 🌐 **Landing Page**         | Beautiful Next.js landing page with India-themed design   |
 | 📊 **Election Data**        | 50,000+ records across Lok Sabha & Assembly elections     |
 | 🔍 **Search & Filter**      | Basic search and filtering capabilities                   |
@@ -107,6 +108,125 @@ pre-commit install
 # Run development server
 python run.py
 ```
+
+---
+
+## 💾 **Database Support**
+
+Rajniti now supports PostgreSQL database storage in addition to JSON files! Perfect for production deployments and works seamlessly with both local PostgreSQL and Supabase.
+
+### **🎯 Features**
+
+-   **Dual Storage**: Use JSON files or PostgreSQL database
+-   **Supabase Ready**: Works out-of-the-box with Supabase
+-   **Local PostgreSQL**: Full support for local development
+-   **CRUD Operations**: Complete Create, Read, Update, Delete operations
+-   **Easy Migration**: Script to migrate existing JSON data to database
+-   **Alembic Migrations**: Database schema version control
+
+### **Quick Database Setup**
+
+#### **Option 1: Local PostgreSQL**
+
+```bash
+# Install PostgreSQL (if not already installed)
+# Ubuntu/Debian
+sudo apt-get install postgresql postgresql-contrib
+
+# macOS (with Homebrew)
+brew install postgresql
+
+# Create database
+createdb rajniti
+
+# Set environment variable
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/rajniti"
+
+# Initialize database (create tables)
+python scripts/db.py init
+
+# Migrate JSON data to database
+python scripts/db.py migrate
+```
+
+#### **Option 2: Supabase (Recommended for Production)**
+
+```bash
+# 1. Create a Supabase project at https://supabase.com
+# 2. Get your database connection string from Project Settings → Database
+# 3. Set environment variable
+export SUPABASE_DB_URL="postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres"
+
+# Initialize database (create tables)
+python scripts/db.py init
+
+# Migrate JSON data to database
+python scripts/db.py migrate
+```
+
+### **Database Management Commands**
+
+```bash
+# Initialize database (create tables)
+python scripts/db.py init
+
+# Migrate JSON data to database
+python scripts/db.py migrate
+
+# Preview migration without changes
+python scripts/db.py migrate --dry-run
+
+# Reset database (⚠️ deletes all data)
+python scripts/db.py reset
+```
+
+### **Database Models**
+
+Three main models with full CRUD operations:
+
+-   **Party**: Political parties (id, name, short_name, symbol)
+-   **Constituency**: Electoral districts (id, name, state_id)
+-   **Candidate**: Election candidates (id, name, party_id, constituency_id, state_id, status, type, image_url)
+
+### **Using Database in Code**
+
+```python
+from app.database import get_db_session
+from app.database.models import Party, Constituency, Candidate
+
+# Create a party
+with get_db_session() as session:
+    party = Party.create(session, "123", "Example Party", "EP", "Lotus")
+
+# Get all parties
+with get_db_session() as session:
+    parties = Party.get_all(session)
+
+# Search candidates
+with get_db_session() as session:
+    candidates = Candidate.search_by_name(session, "Modi")
+```
+
+### **Configuration**
+
+Set database connection via environment variables (in order of priority):
+
+```bash
+# Option 1: Full database URL
+DATABASE_URL=postgresql://user:password@localhost:5432/rajniti
+
+# Option 2: Supabase URL
+SUPABASE_DB_URL=postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
+
+# Option 3: Individual components
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=rajniti
+DB_USER=postgres
+DB_PASSWORD=postgres
+```
+
+📚 **Full documentation**: See [app/database/README.md](app/database/README.md) for detailed usage, migrations, and troubleshooting.
 
 ---
 
