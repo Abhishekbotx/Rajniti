@@ -5,10 +5,11 @@ This directory contains the database layer for Rajniti Election Data API.
 ## Overview
 
 The database layer provides:
-- **DB Models** with CRUD operations for Party, Constituency, and Candidate
-- **PostgreSQL Support** compatible with both local PostgreSQL and Supabase
-- **Alembic Migrations** for database schema management
-- **JSON to DB Migration** script to migrate existing JSON data
+
+-   **DB Models** with CRUD operations for Party, Constituency, and Candidate
+-   **PostgreSQL Support** compatible with both local PostgreSQL and Supabase
+-   **Alembic Migrations** for database schema management
+-   **JSON to DB Migration** script to migrate existing JSON data
 
 ## Structure
 
@@ -76,12 +77,44 @@ CREATE DATABASE rajniti;
 \q
 ```
 
+If Above doesn't work, You may not have your user created. Follow the steps below -
+
+1. Connect via Default User
+
+```
+psql -d postgres
+```
+
+2. Check existing roles
+
+```
+\du
+```
+
+3. Create a New User with Password. Remember the password as You'll need for DB Connection
+
+```
+CREATE ROLE postgres WITH LOGIN SUPERUSER PASSWORD 'postgres';
+```
+
+4. Log in via newly created user
+
+```
+psql -U postgres -d postgres
+```
+
+5. Create DB
+
+```
+CREATE DATABASE rajniti;
+```
+
 ### 2. Supabase Setup
 
 1. Create a Supabase project at https://supabase.com
 2. Get your database connection string from:
-   - Project Settings → Database → Connection String
-   - Use the "URI" format
+    - Project Settings → Database → Connection String
+    - Use the "URI" format
 3. Set the `SUPABASE_DB_URL` environment variable
 
 ### 3. Initialize Database
@@ -287,11 +320,11 @@ from app.services.data_service import DataService
 
 class DbDataService(DataService):
     """Database-backed data service implementation."""
-    
+
     def get_parties(self, election_id: str):
         with get_db_session() as session:
             return Party.get_all(session)
-    
+
     # Implement other DataService methods...
 ```
 
@@ -331,16 +364,16 @@ GRANT ALL PRIVILEGES ON DATABASE rajniti TO your_user;
 
 ## Environment Variables Reference
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | Full database connection string | `postgresql://user:pass@host:5432/db` |
-| `SUPABASE_DB_URL` | Supabase database URL | `postgresql://postgres:pass@db.xxx.supabase.co:5432/postgres` |
-| `DB_HOST` | Database host | `localhost` |
-| `DB_PORT` | Database port | `5432` |
-| `DB_NAME` | Database name | `rajniti` |
-| `DB_USER` | Database user | `postgres` |
-| `DB_PASSWORD` | Database password | `postgres` |
-| `DB_ECHO` | Log SQL queries | `true` or `false` |
+| Variable          | Description                     | Example                                                       |
+| ----------------- | ------------------------------- | ------------------------------------------------------------- |
+| `DATABASE_URL`    | Full database connection string | `postgresql://user:pass@host:5432/db`                         |
+| `SUPABASE_DB_URL` | Supabase database URL           | `postgresql://postgres:pass@db.xxx.supabase.co:5432/postgres` |
+| `DB_HOST`         | Database host                   | `localhost`                                                   |
+| `DB_PORT`         | Database port                   | `5432`                                                        |
+| `DB_NAME`         | Database name                   | `rajniti`                                                     |
+| `DB_USER`         | Database user                   | `postgres`                                                    |
+| `DB_PASSWORD`     | Database password               | `postgres`                                                    |
+| `DB_ECHO`         | Log SQL queries                 | `true` or `false`                                             |
 
 ## Security Considerations
 
