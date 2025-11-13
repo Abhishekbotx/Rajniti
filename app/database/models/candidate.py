@@ -2,14 +2,18 @@
 Candidate database model with CRUD operations.
 """
 
-from typing import List, Optional
+import logging
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import String
 from sqlalchemy.orm import Session
+from sqlalchemy.types import JSON
 
 from ..base import Base
+
+logger = logging.getLogger(__name__)
 
 
 class Candidate(Base):
@@ -26,13 +30,22 @@ class Candidate(Base):
     name = Column(String, nullable=False, index=True)
     party_id = Column(String, nullable=False, index=True)
     constituency_id = Column(String, nullable=False, index=True)  # unique_id reference
-    original_constituency_id = Column(String, nullable=True)  # Original ID for backward compatibility
+    original_constituency_id = Column(
+        String, nullable=True
+    )  # Original ID for backward compatibility
     state_id = Column(String, nullable=False, index=True)
     image_url = Column(String, nullable=True)
     status = Column(SQLEnum("WON", "LOST", name="candidate_status"), nullable=False)
     type = Column(
         SQLEnum("MP", "MLA", name="candidate_type"), nullable=False, default="MP"
     )
+
+    # New detailed information fields (JSON/JSONB for flexibility)
+    # Using JSON for SQLite compatibility and JSONB for PostgreSQL performance
+    education_background = Column(JSON, nullable=True)
+    political_background = Column(JSON, nullable=True)
+    family_background = Column(JSON, nullable=True)
+    assets = Column(JSON, nullable=True)
 
     def __repr__(self) -> str:
         return f"<Candidate(id={self.id}, name={self.name}, party_id={self.party_id})>"
@@ -52,6 +65,10 @@ class Candidate(Base):
         type: str = "MP",
         image_url: Optional[str] = None,
         original_constituency_id: Optional[str] = None,
+        education_background: Optional[Dict[str, Any]] = None,
+        political_background: Optional[Dict[str, Any]] = None,
+        family_background: Optional[Dict[str, Any]] = None,
+        assets: Optional[Dict[str, Any]] = None,
     ) -> "Candidate":
         """
         Create a new candidate.
@@ -67,10 +84,24 @@ class Candidate(Base):
             type: Candidate type (MP/MLA), defaults to MP
             image_url: URL to candidate image (optional)
             original_constituency_id: Original constituency ID for backward compatibility
+            education_background: Education background data (optional)
+            political_background: Political background data (optional)
+            family_background: Family background data (optional)
+            assets: Assets data (optional)
 
         Returns:
             Created Candidate instance
         """
+        logger.info(f"Creating candidate: {name} (ID: {id})")
+        if education_background:
+            logger.debug(f"Education background provided for {name}")
+        if political_background:
+            logger.debug(f"Political background provided for {name}")
+        if family_background:
+            logger.debug(f"Family background provided for {name}")
+        if assets:
+            logger.debug(f"Assets information provided for {name}")
+
         candidate = cls(
             id=id,
             name=name,
@@ -81,9 +112,14 @@ class Candidate(Base):
             status=status,
             type=type,
             image_url=image_url,
+            education_background=education_background,
+            political_background=political_background,
+            family_background=family_background,
+            assets=assets,
         )
         session.add(candidate)
         session.flush()
+        logger.info(f"Candidate {name} created successfully")
         return candidate
 
     @classmethod
@@ -223,20 +259,30 @@ class Candidate(Base):
         Returns:
             List of created Candidate instances
         """
+        logger.info(f"Bulk creating {len(candidates)} candidates")
         candidate_objects = [
             cls(
                 id=c["id"],
                 name=c["name"],
                 party_id=c["party_id"],
-                constituency_id=c.get("constituency_unique_id", c.get("constituency_id")),
-                original_constituency_id=c.get("constituency_id"),  # Keep original for compatibility
+                constituency_id=c.get(
+                    "constituency_unique_id", c.get("constituency_id")
+                ),
+                original_constituency_id=c.get(
+                    "constituency_id"
+                ),  # Keep original for compatibility
                 state_id=c["state_id"],
                 status=c["status"],
                 type=c.get("type", "MP"),
                 image_url=c.get("image_url"),
+                education_background=c.get("education_background"),
+                political_background=c.get("political_background"),
+                family_background=c.get("family_background"),
+                assets=c.get("assets"),
             )
             for c in candidates
         ]
         session.bulk_save_objects(candidate_objects, return_defaults=True)
         session.flush()
+        logger.info(f"Successfully bulk created {len(candidate_objects)} candidates")
         return candidate_objects
