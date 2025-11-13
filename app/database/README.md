@@ -28,29 +28,23 @@ app/database/
 
 ## Database Configuration
 
-The application supports multiple ways to configure the database:
+Set the `DATABASE_URL` environment variable to your PostgreSQL connection string.
 
-### Option 1: Full Database URL (Recommended)
+Works with both **local PostgreSQL** and **Supabase**.
 
-```bash
-DATABASE_URL=postgresql://user:password@localhost:5432/rajniti
-```
-
-### Option 2: Supabase Database URL
+### Local PostgreSQL
 
 ```bash
-SUPABASE_DB_URL=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+export DATABASE_URL="postgresql://user:password@localhost:5432/rajniti"
 ```
 
-### Option 3: Individual Components
+### Supabase
 
 ```bash
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=rajniti
-DB_USER=postgres
-DB_PASSWORD=postgres
+export DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
 ```
+
+**Note:** Get your Supabase connection string from: Project Settings → Database → Connection String (URI format)
 
 ## Setup
 
@@ -114,8 +108,8 @@ CREATE DATABASE rajniti;
 1. Create a Supabase project at https://supabase.com
 2. Get your database connection string from:
     - Project Settings → Database → Connection String
-    - Use the "URI" format
-3. Set the `SUPABASE_DB_URL` environment variable
+    - Use the "URI" format (pooler connection recommended)
+3. Set the `DATABASE_URL` environment variable
 
 ### 3. Initialize Database
 
@@ -123,10 +117,10 @@ CREATE DATABASE rajniti;
 # Activate virtual environment
 source venv/bin/activate
 
-# Set database URL (choose one method)
+# Set database URL (local or Supabase)
 export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/rajniti"
-# OR
-export SUPABASE_DB_URL="postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres"
+# OR for Supabase:
+# export DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
 
 # Initialize database (creates tables)
 python -c "from app.database import init_db; init_db()"
@@ -787,13 +781,7 @@ GRANT ALL PRIVILEGES ON DATABASE rajniti TO your_user;
 
 | Variable          | Description                     | Example                                                       |
 | ----------------- | ------------------------------- | ------------------------------------------------------------- |
-| `DATABASE_URL`    | Full database connection string | `postgresql://user:pass@host:5432/db`                         |
-| `SUPABASE_DB_URL` | Supabase database URL           | `postgresql://postgres:pass@db.xxx.supabase.co:5432/postgres` |
-| `DB_HOST`         | Database host                   | `localhost`                                                   |
-| `DB_PORT`         | Database port                   | `5432`                                                        |
-| `DB_NAME`         | Database name                   | `rajniti`                                                     |
-| `DB_USER`         | Database user                   | `postgres`                                                    |
-| `DB_PASSWORD`     | Database password               | `postgres`                                                    |
+| `DATABASE_URL`    | Database connection string (required) | `postgresql://user:pass@host:5432/db` (local or Supabase) |
 | `DB_ECHO`         | Log SQL queries                 | `true` or `false`                                             |
 
 ## Security Considerations

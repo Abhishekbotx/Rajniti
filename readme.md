@@ -153,9 +153,9 @@ python scripts/db.py migrate
 
 ```bash
 # 1. Create a Supabase project at https://supabase.com
-# 2. Get your database connection string from Project Settings → Database
+# 2. Get your database connection string from Project Settings → Database (URI format)
 # 3. Set environment variable
-export SUPABASE_DB_URL="postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres"
+export DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
 
 # Initialize database (create tables)
 python scripts/db.py init
@@ -209,21 +209,14 @@ with get_db_session() as session:
 
 ### **Configuration**
 
-Set database connection via environment variables (in order of priority):
+Set the `DATABASE_URL` environment variable to your PostgreSQL connection string:
 
 ```bash
-# Option 1: Full database URL
-DATABASE_URL=postgresql://user:password@localhost:5432/rajniti
+# Local PostgreSQL
+export DATABASE_URL="postgresql://user:password@localhost:5432/rajniti"
 
-# Option 2: Supabase URL
-SUPABASE_DB_URL=postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
-
-# Option 3: Individual components
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=rajniti
-DB_USER=postgres
-DB_PASSWORD=postgres
+# Supabase
+export DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
 ```
 
 📚 **Full documentation**: See [app/database/README.md](app/database/README.md) for detailed usage, migrations, and troubleshooting.
