@@ -7,8 +7,9 @@ All business logic for data retrieval and manipulation goes here.
 
 from .data_service import DataService
 from .json_data_service import JsonDataService
+from .perplexity_service import PerplexityService
 
 # Create singleton instance
 data_service: DataService = JsonDataService()
 
-__all__ = ["data_service", "DataService", "JsonDataService"]
+__all__ = ["data_service", "DataService", "JsonDataService", "PerplexityService"]

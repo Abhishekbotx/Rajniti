@@ -9,7 +9,9 @@ alembic==1.13.0
 annotated-types==0.7.0
     # via pydantic
 anyio==4.11.0
-    # via httpx
+    # via
+    #   httpx
+    #   perplexityai
 autoflake==2.2.1
     # via -r requirements.in
 beautifulsoup4==4.12.2
@@ -33,6 +35,8 @@ click==8.1.8
     #   pip-tools
 distlib==0.4.0
     # via virtualenv
+distro==1.9.0
+    # via perplexityai
 filelock==3.19.1
     # via virtualenv
 flake8==6.1.0
@@ -56,7 +60,9 @@ hpack==4.1.0
 httpcore==1.0.9
     # via httpx
 httpx[http2]==0.25.2
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   perplexityai
 hyperframe==6.1.0
     # via h2
 identify==2.6.14
@@ -94,6 +100,8 @@ packaging==25.0
     #   pytest
 pathspec==0.12.1
     # via black
+perplexityai==0.20.0
+    # via -r requirements.in
 pip-tools==7.5.0
     # via -r requirements.in
 platformdirs==4.4.0
@@ -109,7 +117,9 @@ psycopg2-binary==2.9.9
 pycodestyle==2.11.1
     # via flake8
 pydantic==2.10.0
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   perplexityai
 pydantic-core==2.27.0
     # via pydantic
 pyflakes==3.1.0
@@ -130,6 +140,7 @@ sniffio==1.3.1
     # via
     #   anyio
     #   httpx
+    #   perplexityai
 soupsieve==2.8
     # via beautifulsoup4
 sqlalchemy==2.0.23
