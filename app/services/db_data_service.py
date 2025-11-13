@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from app.database import get_db_session
 from app.database.models import Candidate as DbCandidate
 from app.database.models import Constituency as DbConstituency
+from app.database.models import Election as DbElection
 from app.database.models import Party as DbParty
 from app.models import Constituency, Election, ElectionType, Party
 
@@ -20,46 +21,54 @@ class DbDataService(DataService):
     """Database-backed data service implementation"""
 
     def __init__(self):
-        # For now, we'll support Lok Sabha 2024 similar to JSON service
-        # This can be extended to support multiple elections from the database
         self._elections_cache = None
 
     def get_elections(self) -> List[Election]:
-        """Get all available elections"""
+        """Get all available elections from database"""
         if self._elections_cache is None:
-            # TODO: Store elections metadata in database
-            # For now, return hardcoded Lok Sabha 2024
-            self._elections_cache = [
-                Election(
-                    id="lok-sabha-2024",
-                    name="Lok Sabha General Elections 2024",
-                    type=ElectionType.LOK_SABHA,
-                    year=2024,
-                )
-            ]
+            with get_db_session() as session:
+                db_elections = DbElection.get_all(session, skip=0, limit=1000)
+                self._elections_cache = [
+                    Election(
+                        id=e.id,
+                        name=e.name,
+                        type=ElectionType(e.type),
+                        year=e.year,
+                    )
+                    for e in db_elections
+                ]
         return self._elections_cache
 
     def get_election(self, election_id: str) -> Optional[Election]:
-        """Get a specific election by ID"""
-        elections = self.get_elections()
-        for election in elections:
-            if election.id == election_id:
-                return election
+        """Get a specific election by ID from database"""
+        with get_db_session() as session:
+            db_election = DbElection.get_by_id(session, election_id)
+            if db_election:
+                return Election(
+                    id=db_election.id,
+                    name=db_election.name,
+                    type=ElectionType(db_election.type),
+                    year=db_election.year,
+                )
         return None
 
     def get_candidates(self, election_id: str) -> List[Dict[str, Any]]:
         """Get all candidates for an election"""
-        if election_id != "lok-sabha-2024":
+        # Verify election exists
+        election = self.get_election(election_id)
+        if not election:
             return []
 
         with get_db_session() as session:
             db_candidates = DbCandidate.get_all(session, skip=0, limit=10000)
             # Convert to dict format for API compatibility
-            return [self._candidate_to_dict(c, session) for c in db_candidates]
+            return [self._candidate_to_dict(c, session, election_id) for c in db_candidates]
 
     def get_parties(self, election_id: str) -> List[Party]:
         """Get all parties for an election"""
-        if election_id != "lok-sabha-2024":
+        # Verify election exists
+        election = self.get_election(election_id)
+        if not election:
             return []
 
         with get_db_session() as session:
@@ -77,7 +86,9 @@ class DbDataService(DataService):
 
     def get_constituencies(self, election_id: str) -> List[Constituency]:
         """Get all constituencies for an election"""
-        if election_id != "lok-sabha-2024":
+        # Verify election exists
+        election = self.get_election(election_id)
+        if not election:
             return []
 
         with get_db_session() as session:
@@ -96,30 +107,48 @@ class DbDataService(DataService):
         self, query: str, election_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Search candidates by name, party, or constituency"""
-        if election_id and election_id != "lok-sabha-2024":
-            return []
+        # If election_id is provided, verify it exists
+        if election_id:
+            election = self.get_election(election_id)
+            if not election:
+                return []
 
         with get_db_session() as session:
             # Search by name
             db_candidates = DbCandidate.search_by_name(session, query)
-            return [self._candidate_to_dict(c, session) for c in db_candidates]
+            # Get all elections to determine election_id for each candidate
+            # For now, we'll use the first election if election_id not provided
+            if not election_id:
+                elections = self.get_elections()
+                election_id = elections[0].id if elections else None
+                if not election_id:
+                    return []
+            
+            return [
+                self._candidate_to_dict(c, session, election_id)
+                for c in db_candidates
+            ]
 
     def get_candidate_by_id(
         self, candidate_id: str, election_id: str
     ) -> Optional[Dict[str, Any]]:
         """Get a specific candidate"""
-        if election_id != "lok-sabha-2024":
+        # Verify election exists
+        election = self.get_election(election_id)
+        if not election:
             return None
 
         with get_db_session() as session:
             db_candidate = DbCandidate.get_by_id(session, candidate_id)
             if db_candidate:
-                return self._candidate_to_dict(db_candidate, session)
+                return self._candidate_to_dict(db_candidate, session, election_id)
             return None
 
     def get_party_by_name(self, party_name: str, election_id: str) -> Optional[Party]:
         """Get a specific party"""
-        if election_id != "lok-sabha-2024":
+        # Verify election exists
+        election = self.get_election(election_id)
+        if not election:
             return None
 
         with get_db_session() as session:
@@ -137,7 +166,9 @@ class DbDataService(DataService):
         self, constituency_id: str, election_id: str
     ) -> Optional[Constituency]:
         """Get a specific constituency"""
-        if election_id != "lok-sabha-2024":
+        # Verify election exists
+        election = self.get_election(election_id)
+        if not election:
             return None
 
         with get_db_session() as session:
@@ -150,7 +181,9 @@ class DbDataService(DataService):
                 )
             return None
 
-    def _candidate_to_dict(self, candidate: DbCandidate, session) -> Dict[str, Any]:
+    def _candidate_to_dict(
+        self, candidate: DbCandidate, session, election_id: str
+    ) -> Dict[str, Any]:
         """
         Convert database candidate to dictionary format with enriched data.
 
@@ -186,5 +219,5 @@ class DbDataService(DataService):
             "status": candidate.status,
             "type": candidate.type,
             "image_url": candidate.image_url,
-            "election_id": "lok-sabha-2024",
+            "election_id": election_id,
         }

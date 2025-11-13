@@ -465,12 +465,6 @@ class VidhanSabhaScraper:
             "voter_turnout": None,
             "result_status": "DECLARED",
             "result_date": None,
-            "winning_party": (
-                self.parties_data[0]["party_name"] if self.parties_data else None
-            ),
-            "winning_party_seats": (
-                self.parties_data[0]["total_seats"] if self.parties_data else 0
-            ),
             "runner_up_party": (
                 self.parties_data[1]["party_name"]
                 if len(self.parties_data) > 1

@@ -36,6 +36,6 @@ def init_db():
     from .base import Base
 
     # Import all models to register them
-    from .models import Candidate, Constituency, Party  # noqa: F401
+    from .models import Candidate, Constituency, Election, Party  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

@@ -128,379 +128,46 @@ python -c "from app.database import init_db; init_db()"
 
 ## Database Migrations
 
-We use Alembic for database schema migrations.
+**Simple & Automatic**: Migrations run automatically when the server starts. Just update your models and run the server or sync script.
 
-### Create a New Migration
+### Automatic Migrations
+
+Migrations are **idempotent** (safe to run multiple times) and run automatically:
+
+1. **On Server Start**: Migrations run automatically when you start the server
+2. **Manual Sync**: Run `python scripts/db.py sync` to sync models to database
+
+### Workflow
+
+**That's it!** Just update your models and:
 
 ```bash
-# Auto-generate migration from model changes
-alembic revision --autogenerate -m "description of changes"
+# Option 1: Start the server (migrations run automatically)
+python run.py
 
-# Create empty migration template
-alembic revision -m "description of changes"
+# Option 2: Manually sync (if you want to update DB without starting server)
+python scripts/db.py sync
 ```
 
-### Apply Migrations
+### Migration Features
+
+-   ✅ **Idempotent**: Safe to run multiple times - won't fail if columns/tables already exist
+-   ✅ **Automatic**: Runs on server startup
+-   ✅ **Simple**: No manual migration steps needed
+
+### Manual Migration Commands (Advanced)
+
+If you need manual control:
 
 ```bash
 # Apply all pending migrations
 alembic upgrade head
 
-# Apply specific migration
-alembic upgrade +1
-
-# Downgrade one migration
-alembic downgrade -1
-```
-
-### View Migration History
-
-```bash
-# Show current migration
-alembic current
-
-# Show migration history
-alembic history
-```
-
-### Migration Workflow
-
-When you make changes to database models, follow this workflow:
-
-**Important**: Always commit migration files (`alembic/versions/*.py`) to git. These files are essential for:
-
--   Team collaboration (everyone needs the same migration history)
--   Production deployments (migrations must run in order)
--   Database schema version control
--   Rollback capabilities
-
-#### Step 1: Check Current Status
-
-```bash
-# Check if database is up to date
+# View current migration status
 alembic current
 
 # View migration history
 alembic history
-```
-
-#### Step 2: Create Migration
-
-```bash
-# Auto-generate migration from model changes
-alembic revision --autogenerate -m "description of changes"
-
-# This will create a migration file in alembic/versions/
-```
-
-**Important**: Review the generated migration file before applying it. You may need to:
-
--   Add data migration logic for existing records
--   Handle nullable columns properly (add as nullable first, populate data, then make NOT NULL)
--   Add custom SQL for complex transformations
-
-#### Step 3: Review Migration File
-
-Always review the auto-generated migration file (`alembic/versions/XXXXX_description.py`):
-
--   Check that all model changes are captured correctly
--   Add data migration steps if needed (e.g., populating new columns from existing data)
--   Ensure backward compatibility if removing columns
--   Test the migration on a copy of production data if possible
-
-#### Step 4: Apply Migration
-
-```bash
-# Apply the migration
-alembic upgrade head
-
-# Verify migration was applied
-alembic current
-```
-
-#### Step 5: Verify Migration
-
-After applying a migration, verify it worked correctly:
-
-##### 5.1: Check Alembic Status
-
-```bash
-# Check current migration version
-alembic current
-# Should show the latest migration revision (e.g., 2b1da9ee1f5d (head))
-
-# View migration history
-alembic history
-# Should show all migrations including the one you just applied
-```
-
-##### 5.2: Verify Database Schema (Using psql)
-
-**Connect to Database:**
-
-```bash
-# Connect using connection string
-psql "postgresql://postgres:postgres@localhost:5432/rajniti"
-
-# Or if using environment variable
-psql $DATABASE_URL
-
-# Or connect step by step
-psql -U postgres -d rajniti
-```
-
-**List All Tables:**
-
-```sql
--- List all tables in the database
-\dt
-
--- Or get more details
-\dt+
-
--- List tables with schema information
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema = 'public'
-ORDER BY table_name;
-```
-
-**Check Table Structure:**
-
-```sql
--- Describe a specific table (shows columns, types, constraints)
-\d constituencies
-
--- Or get detailed information
-\d+ constituencies
-
--- Get column information using SQL
-SELECT
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
-FROM information_schema.columns
-WHERE table_name = 'constituencies'
-ORDER BY ordinal_position;
-```
-
-**View Table Data:**
-
-```sql
--- View first 10 rows
-SELECT * FROM constituencies LIMIT 10;
-
--- Count total rows
-SELECT COUNT(*) FROM constituencies;
-
--- View specific columns
-SELECT id, original_id, name, state_id
-FROM constituencies
-LIMIT 5;
-
--- Check for NULL values in new columns
-SELECT
-    COUNT(*) as total,
-    COUNT(original_id) as with_original_id,
-    COUNT(*) - COUNT(original_id) as missing_original_id
-FROM constituencies;
-```
-
-**Verify Migration-Specific Changes:**
-
-```sql
--- Check if new columns exist
-SELECT column_name
-FROM information_schema.columns
-WHERE table_name = 'constituencies'
-  AND column_name IN ('original_id', 'id', 'name', 'state_id');
-
--- Verify data was migrated correctly (if applicable)
-SELECT id, original_id, name, state_id
-FROM constituencies
-WHERE original_id IS NULL;  -- Should return 0 rows
-
--- Check candidates table
-SELECT column_name
-FROM information_schema.columns
-WHERE table_name = 'candidates'
-  AND column_name IN ('original_constituency_id', 'constituency_id', 'state_id');
-
--- Exit psql
-\q
-```
-
-##### 5.3: Verify Using Python
-
-```python
-from app.database import get_db_session
-from app.database.models import Constituency, Candidate
-from sqlalchemy import inspect, text
-
-# Verify table structure
-with get_db_session() as session:
-    # Check Constituency table columns
-    inspector = inspect(Constituency)
-    constituency_columns = [col.name for col in inspector.columns]
-    print("Constituency columns:", constituency_columns)
-
-    # Check Candidate table columns
-    inspector = inspect(Candidate)
-    candidate_columns = [col.name for col in inspector.columns]
-    print("Candidate columns:", candidate_columns)
-
-    # Count records
-    constituency_count = session.query(Constituency).count()
-    candidate_count = session.query(Candidate).count()
-    print(f"\nTotal constituencies: {constituency_count}")
-    print(f"Total candidates: {candidate_count}")
-
-    # View sample data
-    if constituency_count > 0:
-        sample = session.query(Constituency).first()
-        print(f"\nSample constituency:")
-        print(f"  id: {sample.id}")
-        print(f"  original_id: {sample.original_id}")
-        print(f"  name: {sample.name}")
-        print(f"  state_id: {sample.state_id}")
-
-print("\n✓ Migration verification complete!")
-```
-
-##### 5.4: Common Verification Queries
-
-**Check All Tables:**
-
-```sql
--- List all tables with row counts
-SELECT
-    schemaname,
-    tablename,
-    (SELECT COUNT(*) FROM information_schema.columns
-     WHERE table_name = tablename) as column_count
-FROM pg_tables
-WHERE schemaname = 'public'
-ORDER BY tablename;
-```
-
-**Verify Foreign Key Relationships:**
-
-```sql
--- Check foreign key constraints
-SELECT
-    tc.table_name,
-    kcu.column_name,
-    ccu.table_name AS foreign_table_name,
-    ccu.column_name AS foreign_column_name
-FROM information_schema.table_constraints AS tc
-JOIN information_schema.key_column_usage AS kcu
-  ON tc.constraint_name = kcu.constraint_name
-JOIN information_schema.constraint_column_usage AS ccu
-  ON ccu.constraint_name = tc.constraint_name
-WHERE tc.constraint_type = 'FOREIGN KEY'
-  AND tc.table_schema = 'public';
-```
-
-**Check Indexes:**
-
-```sql
--- List all indexes
-SELECT
-    tablename,
-    indexname,
-    indexdef
-FROM pg_indexes
-WHERE schemaname = 'public'
-ORDER BY tablename, indexname;
-```
-
-**Data Integrity Checks:**
-
-```sql
--- Verify no orphaned records (if foreign keys exist)
-SELECT COUNT(*) as orphaned_candidates
-FROM candidates c
-LEFT JOIN constituencies const ON c.constituency_id = const.id
-WHERE const.id IS NULL;
-
--- Check for duplicate primary keys (should return 0)
-SELECT id, COUNT(*)
-FROM constituencies
-GROUP BY id
-HAVING COUNT(*) > 1;
-```
-
-##### 5.5: Quick Verification Checklist
-
-After running a migration, verify:
-
--   [ ] `alembic current` shows the new migration revision
--   [ ] New columns exist in the target table(s)
--   [ ] Column data types are correct
--   [ ] NOT NULL constraints are applied (if applicable)
--   [ ] Existing data is preserved (if applicable)
--   [ ] New columns are populated (if data migration was needed)
--   [ ] No errors in application logs
--   [ ] Application can query the updated tables successfully
-
-#### Common Errors and Solutions
-
-**Error**: `Target database is not up to date`
-
--   **Cause**: There's an unapplied migration
--   **Solution**: Run `alembic upgrade head` first to apply pending migrations, then create new migrations
-
-**Error**: `Can't locate revision identified by 'XXXXX'`
-
--   **Cause**: Migration history mismatch between database and files
--   **Solution**: Check `alembic current` vs `alembic history` to identify the issue
-
-**Error**: Column already exists / Column does not exist
-
--   **Cause**: Database schema doesn't match expected state
--   **Solution**:
-    -   Check migration history: `alembic history`
-    -   Verify current state: `alembic current`
-    -   If needed, reset: `alembic downgrade base && alembic upgrade head` (⚠️ deletes all data)
-
-#### Handling Existing Data
-
-When adding new columns to existing tables with data:
-
-1. Add column as nullable first
-2. Populate data from existing columns or default values
-3. Make column NOT NULL if required
-
-Example migration pattern:
-
-```python
-def upgrade() -> None:
-    # Step 1: Add column as nullable
-    op.add_column('table_name', sa.Column('new_column', sa.String(), nullable=True))
-
-    # Step 2: Populate data
-    op.execute("""
-        UPDATE table_name
-        SET new_column = existing_column || '-suffix'
-        WHERE new_column IS NULL
-    """)
-
-    # Step 3: Make NOT NULL (if required)
-    op.alter_column('table_name', 'new_column', nullable=False)
-```
-
-#### Rollback Migration
-
-```bash
-# Rollback last migration
-alembic downgrade -1
-
-# Rollback to specific revision
-alembic downgrade <revision_id>
-
-# Rollback all migrations (⚠️ deletes all data)
-alembic downgrade base
 ```
 
 ## Migrating JSON Data to Database
@@ -779,10 +446,10 @@ GRANT ALL PRIVILEGES ON DATABASE rajniti TO your_user;
 
 ## Environment Variables Reference
 
-| Variable          | Description                     | Example                                                       |
-| ----------------- | ------------------------------- | ------------------------------------------------------------- |
-| `DATABASE_URL`    | Database connection string (required) | `postgresql://user:pass@host:5432/db` (local or Supabase) |
-| `DB_ECHO`         | Log SQL queries                 | `true` or `false`                                             |
+| Variable       | Description                           | Example                                                   |
+| -------------- | ------------------------------------- | --------------------------------------------------------- |
+| `DATABASE_URL` | Database connection string (required) | `postgresql://user:pass@host:5432/db` (local or Supabase) |
+| `DB_ECHO`      | Log SQL queries                       | `true` or `false`                                         |
 
 ## Security Considerations
 

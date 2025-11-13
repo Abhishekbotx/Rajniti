@@ -13,12 +13,12 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 
 ## 🚢 Quick Deployment
 
-| Platform | Type | Command | Status |
-|----------|------|---------|--------|
-| **Netlify** | Frontend | `netlify deploy --prod` | ✅ Ready |
-| **GCP Cloud Run** | Backend | `gcloud builds submit` | ✅ Ready |
-| **Docker** | Full Stack | `docker-compose up -d` | ✅ Ready |
-| **Vercel** | Frontend | `vercel --prod` | ✅ Ready |
+| Platform          | Type       | Command                 | Status   |
+| ----------------- | ---------- | ----------------------- | -------- |
+| **Netlify**       | Frontend   | `netlify deploy --prod` | ✅ Ready |
+| **GCP Cloud Run** | Backend    | `gcloud builds submit`  | ✅ Ready |
+| **Docker**        | Full Stack | `docker-compose up -d`  | ✅ Ready |
+| **Vercel**        | Frontend   | `vercel --prod`         | ✅ Ready |
 
 👉 **Jump to**: [Netlify Deployment Guide](#deploy-to-netlify-) • [Backend Deployment](#deployment) • [Docker Setup](#option-1-docker-recommended)
 
@@ -122,7 +122,7 @@ Rajniti now supports PostgreSQL database storage in addition to JSON files! Perf
 -   **Local PostgreSQL**: Full support for local development
 -   **CRUD Operations**: Complete Create, Read, Update, Delete operations
 -   **Easy Migration**: Script to migrate existing JSON data to database
--   **Alembic Migrations**: Database schema version control
+-   **Automatic Migrations**: Idempotent migrations run automatically on server start
 
 ### **Quick Database Setup**
 
@@ -167,6 +167,9 @@ python scripts/db.py migrate
 ### **Database Management Commands**
 
 ```bash
+# Sync database with models (auto-generate & run migrations)
+python scripts/db.py sync
+
 # Initialize database (create tables)
 python scripts/db.py init
 
@@ -179,6 +182,8 @@ python scripts/db.py migrate --dry-run
 # Reset database (⚠️ deletes all data)
 python scripts/db.py reset
 ```
+
+**Note**: Migrations run automatically on server startup. Just update your models and start the server!
 
 ### **Database Models**
 
@@ -273,10 +278,10 @@ git push -u origin main
 3. Connect your **GitHub/GitLab/Bitbucket** account
 4. Select your **rajniti repository**
 5. Configure build settings:
-   - **Base directory**: `frontend`
-   - **Build command**: `npm run build`
-   - **Publish directory**: `.next`
-   - **Framework**: Next.js (auto-detected)
+    - **Base directory**: `frontend`
+    - **Build command**: `npm run build`
+    - **Publish directory**: `.next`
+    - **Framework**: Next.js (auto-detected)
 6. Click **"Deploy site"**
 
 #### **Step 3: Add Environment Variables (Optional)**
@@ -285,8 +290,8 @@ If you have a backend API, add this environment variable in Netlify:
 
 1. Go to **Site settings** → **Environment variables**
 2. Add variable:
-   - **Key**: `NEXT_PUBLIC_API_URL`
-   - **Value**: `https://your-backend-api.com`
+    - **Key**: `NEXT_PUBLIC_API_URL`
+    - **Value**: `https://your-backend-api.com`
 
 #### **Step 4: Update Backend URL (If applicable)**
 
@@ -636,7 +641,6 @@ Each scraper produces 4 JSON files:
     "total_candidates": 3802,
     "total_parties": 211,
     "result_status": "DECLARED",
-    "winning_party": "Bharatiya Janata Party",
     "winning_party_seats": 240
 }
 ```
@@ -655,7 +659,6 @@ Each scraper produces 4 JSON files:
     "total_candidates": 6914,
     "total_parties": 3,
     "result_status": "DECLARED",
-    "winning_party": "Bharatiya Janata Party",
     "winning_party_seats": 48,
     "runner_up_party": "Aam Aadmi Party",
     "runner_up_seats": 22
@@ -839,20 +842,22 @@ PERPLEXITY_API_KEY=your-perplexity-api-key-here
 #### Common Errors
 
 1. **"Perplexity API key not provided"**
-   - Solution: Set `PERPLEXITY_API_KEY` environment variable or add to `.env` file
+
+    - Solution: Set `PERPLEXITY_API_KEY` environment variable or add to `.env` file
 
 2. **"Module not found: perplexityai"**
-   - Solution: Run `pip install -r requirements.txt`
+
+    - Solution: Run `pip install -r requirements.txt`
 
 3. **Rate limit exceeded**
-   - Solution: Wait a moment and retry, or upgrade your Perplexity API plan
+    - Solution: Wait a moment and retry, or upgrade your Perplexity API plan
 
 ### **📚 Resources**
 
-- [Perplexity API Documentation](https://docs.perplexity.ai/)
-- [API Quickstart Guide](https://docs.perplexity.ai/guides/perplexity-sdk)
-- [Search API Guide](https://docs.perplexity.ai/guides/search-guide)
-- [Location Filter Guide](https://docs.perplexity.ai/guides/user-location-filter-guide)
+-   [Perplexity API Documentation](https://docs.perplexity.ai/)
+-   [API Quickstart Guide](https://docs.perplexity.ai/guides/perplexity-sdk)
+-   [Search API Guide](https://docs.perplexity.ai/guides/search-guide)
+-   [Location Filter Guide](https://docs.perplexity.ai/guides/user-location-filter-guide)
 
 ---
 

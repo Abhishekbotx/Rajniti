@@ -12,6 +12,7 @@ from flask_cors import CORS
 from app.core.database import init_db
 from app.core.exceptions import RajnitiError
 from app.core.response import error_response
+from app.database.migrate import run_migrations
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,8 @@ def create_app():
     db_initialized = init_db(app)
     if db_initialized:
         logger.info("Database initialized successfully")
+        # Run migrations automatically on startup
+        run_migrations()
     else:
         logger.info("Database not initialized - continuing without database")
 

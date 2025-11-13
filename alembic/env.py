@@ -10,7 +10,7 @@ from app.database.config import get_database_url
 from app.database.base import Base
 
 # Import all models to register them with Base
-from app.database.models import Candidate, Constituency, Party  # noqa: F401
+from app.database.models import Candidate, Constituency, Election, Party  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

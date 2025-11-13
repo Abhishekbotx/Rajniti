@@ -5,6 +5,7 @@ Database management utility script.
 Provides easy commands for common database operations.
 
 Usage:
+    python scripts/db.py sync           # Sync DB with models (auto-generate & run migrations)
     python scripts/db.py init           # Initialize database (create tables)
     python scripts/db.py migrate        # Migrate JSON data to database
     python scripts/db.py migrate --dry-run  # Preview migration without changes
@@ -21,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from app.database import init_db
 from app.database.base import Base
 from app.database.session import engine
+from app.database.migrate import sync_db
 
 
 def cmd_init():
@@ -62,6 +64,23 @@ def cmd_reset():
         sys.exit(1)
 
 
+def cmd_sync():
+    """Sync database with models (auto-generate and run migrations)."""
+    print("🔄 Syncing database with models...")
+    print("   This will auto-generate migrations and apply them.\n")
+    
+    try:
+        success = sync_db()
+        if success:
+            print("\n✓ Database sync completed successfully!")
+        else:
+            print("\n✗ Database sync failed. Check the logs above for details.")
+            sys.exit(1)
+    except Exception as e:
+        print(f"✗ Error syncing database: {e}")
+        sys.exit(1)
+
+
 def cmd_migrate(dry_run: bool = False, election_dir: Path = None):
     """Migrate JSON data to database."""
     from scripts.migrations.migrate_json_to_db import migrate_election_data
@@ -76,6 +95,9 @@ def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Database management utility")
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
+
+    # Sync command
+    subparsers.add_parser("sync", help="Sync DB with models (auto-generate & run migrations)")
 
     # Init command
     subparsers.add_parser("init", help="Initialize database (create tables)")
@@ -96,7 +118,9 @@ def main():
 
     args = parser.parse_args()
 
-    if args.command == "init":
+    if args.command == "sync":
+        cmd_sync()
+    elif args.command == "init":
         cmd_init()
     elif args.command == "reset":
         cmd_reset()
