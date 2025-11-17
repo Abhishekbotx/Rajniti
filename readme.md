@@ -32,6 +32,7 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 | --------------------------- | --------------------------------------------------------- |
 | 🚀 **Simple Flask API**     | Clean RESTful endpoints serving JSON data                 |
 | 💾 **Database Support**     | PostgreSQL/Supabase support with easy migration           |
+| 🤖 **AI-Powered Agent**     | Automated candidate data population using Perplexity AI   |
 | 🌐 **Landing Page**         | Beautiful Next.js landing page with India-themed design   |
 | 📊 **Election Data**        | 50,000+ records across Lok Sabha & Assembly elections     |
 | 🔍 **Search & Filter**      | Basic search and filtering capabilities                   |
@@ -1108,6 +1109,108 @@ cat .env | grep PERPLEXITY_API_KEY
 -   [API Quickstart Guide](https://docs.perplexity.ai/guides/perplexity-sdk)
 -   [Search API Guide](https://docs.perplexity.ai/guides/search-guide)
 -   [Location Filter Guide](https://docs.perplexity.ai/guides/user-location-filter-guide)
+
+---
+
+## 🤖 **Candidate Data Population Agent**
+
+Rajniti includes an intelligent agent that automatically populates detailed candidate information using Perplexity AI. This agent fills in education background, political history, family details, and asset information for all candidates.
+
+### **🚀 Quick Start**
+
+1. **Prerequisites**
+
+    ```bash
+    # Ensure database is set up
+    export DATABASE_URL="postgresql://user:password@localhost:5432/rajniti"
+    
+    # Ensure Perplexity API key is configured
+    export PERPLEXITY_API_KEY="your-api-key-here"
+    ```
+
+2. **Run the Agent**
+
+    ```bash
+    # Process 10 candidates with default settings
+    python scripts/run_candidate_agent.py
+    
+    # Process 50 candidates with custom delays
+    python scripts/run_candidate_agent.py --batch-size 50 --delay-between-candidates 3.0
+    
+    # Dry run to see which candidates would be processed
+    python scripts/run_candidate_agent.py --dry-run
+    ```
+
+### **✨ Features**
+
+-   🔍 **Automatic Discovery**: Finds candidates with missing information
+-   🤖 **AI-Powered**: Uses Perplexity AI for accurate data extraction
+-   📊 **Structured Data**: Extracts data in well-defined JSON format
+-   🔄 **Incremental Updates**: Processes candidates in batches
+-   ⚡ **Smart Rate Limiting**: Built-in delays to respect API limits
+-   📝 **Detailed Logging**: Comprehensive progress tracking
+-   🛡️ **Error Handling**: Gracefully handles API failures
+
+### **📚 Data Populated**
+
+The agent populates four types of detailed information:
+
+1. **Education Background**: Graduation year, field of study, college/school
+2. **Political Background**: Electoral history with all contested elections
+3. **Family Background**: Information about father, mother, spouse, and children
+4. **Assets**: Commercial assets, cash assets, and bank details
+
+### **💻 Usage Examples**
+
+#### **Basic Usage**
+
+```bash
+# Process 10 candidates
+python scripts/run_candidate_agent.py
+```
+
+#### **Large Batch Processing**
+
+```bash
+# Process 100 candidates with conservative delays
+python scripts/run_candidate_agent.py \
+  --batch-size 100 \
+  --delay-between-candidates 3.0 \
+  --delay-between-requests 3.0
+```
+
+#### **Programmatic Usage**
+
+```python
+from app.database.session import get_db_session
+from app.services.candidate_agent import CandidateDataAgent
+
+# Initialize agent
+agent = CandidateDataAgent()
+
+# Run with custom settings
+with get_db_session() as session:
+    stats = agent.run(
+        session=session,
+        batch_size=20,
+        delay_between_candidates=2.0
+    )
+    
+    print(f"Processed: {stats['total_processed']}")
+    print(f"Successful: {stats['successful']}")
+```
+
+### **📖 Documentation**
+
+For detailed documentation, see [docs/CANDIDATE_AGENT.md](docs/CANDIDATE_AGENT.md)
+
+Topics covered:
+-   Architecture and design
+-   Data structures
+-   Error handling
+-   Best practices
+-   Troubleshooting
+-   Performance tuning
 
 ---
 
