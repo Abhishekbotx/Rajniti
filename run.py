@@ -3,9 +3,19 @@ Development server entry point for the Rajniti application.
 """
 import logging
 import os
+from pathlib import Path
 
-from app import create_app
-from app.core.env_checker import check_environment_variables
+# Load environment variables from .env file BEFORE any app imports
+# This ensures DATABASE_URL and other env vars are available during
+# module initialization
+from dotenv import load_dotenv
+
+# Load .env file from project root
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
+
+from app import create_app  # noqa: E402
+from app.core.env_checker import check_environment_variables  # noqa: E402
 
 
 def main():
