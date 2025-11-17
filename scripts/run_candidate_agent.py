@@ -25,7 +25,7 @@ sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
 
-from app.database.session import get_db_session
+from app.database import get_db_session
 from app.services.candidate_agent import CandidateDataAgent
 
 # Load environment variables
