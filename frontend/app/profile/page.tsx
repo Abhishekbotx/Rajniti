@@ -306,7 +306,7 @@ export default function EditProfile() {
             </button>
             <button
               type="submit"
-              disabled={loading || (formData.username && usernameAvailable === false)}
+              disabled={loading || !!(formData.username && usernameAvailable === false)}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg text-white font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Saving...' : 'Save Changes'}
