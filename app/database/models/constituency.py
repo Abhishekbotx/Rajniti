@@ -5,6 +5,7 @@ Constituency database model with CRUD operations.
 from typing import List, Optional
 
 from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from ..base import Base
@@ -20,8 +21,12 @@ class Constituency(Base):
     __tablename__ = "constituencies"
 
     # Columns
-    id = Column(String, primary_key=True, index=True)  # unique_id (format: "{id}-{state_id}")
-    original_id = Column(String, nullable=False)  # Original constituency ID for scraping
+    id = Column(
+        String, primary_key=True, index=True
+    )  # unique_id (format: "{id}-{state_id}")
+    original_id = Column(
+        String, nullable=False
+    )  # Original constituency ID for scraping
     name = Column(String, nullable=False, index=True)
     state_id = Column(String, nullable=False, index=True)
 
@@ -34,7 +39,12 @@ class Constituency(Base):
 
     @classmethod
     def create(
-        cls, session: Session, id: str, name: str, state_id: str, original_id: str = None
+        cls,
+        session: Session,
+        id: str,
+        name: str,
+        state_id: str,
+        original_id: str = None,
     ) -> "Constituency":
         """
         Create a new constituency.
@@ -55,7 +65,7 @@ class Constituency(Base):
                 original_id = id.split("-")[0]
             else:
                 original_id = id
-        
+
         constituency = cls(
             id=id,
             original_id=original_id,
@@ -156,8 +166,12 @@ class Constituency(Base):
         """
         constituency_objects = [
             cls(
-                id=c.get("unique_id", c.get("id")),  # Use unique_id if available, fallback to id
-                original_id=c.get("id", c.get("original_id", "")),  # Original ID for scraping
+                id=c.get(
+                    "unique_id", c.get("id")
+                ),  # Use unique_id if available, fallback to id
+                original_id=c.get(
+                    "id", c.get("original_id", "")
+                ),  # Original ID for scraping
                 name=c["name"],
                 state_id=c["state_id"],
             )
@@ -166,3 +180,56 @@ class Constituency(Base):
         session.bulk_save_objects(constituency_objects, return_defaults=True)
         session.flush()
         return constituency_objects
+
+    @classmethod
+    def bulk_upsert(cls, session: Session, constituencies: List[dict]) -> int:
+        """
+        Upsert multiple constituencies at once (insert if not exists, update if exists).
+
+        Uses PostgreSQL's ON CONFLICT DO UPDATE for efficient upsert operations.
+        If a constituency with the same primary key exists, it will be updated with new values.
+
+        Args:
+            session: Database session
+            constituencies: List of constituency dictionaries
+
+        Returns:
+            Number of records processed (inserted or updated)
+        """
+        if not constituencies:
+            return 0
+
+        # Prepare data for bulk insert
+        values = []
+        for c in constituencies:
+            constituency_id = c.get("unique_id", c.get("id"))
+            original_id = c.get("id", c.get("original_id", ""))
+            # If original_id not provided, extract from id (assuming format "{id}-{state_id}")
+            if not original_id and "-" in constituency_id:
+                original_id = constituency_id.split("-")[0]
+            elif not original_id:
+                original_id = constituency_id
+
+            values.append(
+                {
+                    "id": constituency_id,
+                    "original_id": original_id,
+                    "name": c["name"],
+                    "state_id": c["state_id"],
+                }
+            )
+
+        # Use PostgreSQL's ON CONFLICT DO UPDATE
+        stmt = pg_insert(cls.__table__).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["id"],
+            set_={
+                "original_id": stmt.excluded.original_id,
+                "name": stmt.excluded.name,
+                "state_id": stmt.excluded.state_id,
+            },
+        )
+
+        session.execute(stmt)
+        session.flush()
+        return len(constituencies)
