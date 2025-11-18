@@ -284,6 +284,58 @@ def check_username(current_user):
         }), 500
 
 
+@auth_bp.route("/sync-user", methods=["POST"])
+def sync_user():
+    """
+    Sync user from frontend OAuth to backend database.
+    Called by NextAuth after successful Google OAuth.
+    
+    Request body:
+        {
+            "id": "google_user_id",
+            "email": "user@example.com",
+            "name": "John Doe",
+            "profile_picture": "https://..."
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        user_id = data.get('id')
+        email = data.get('email')
+        name = data.get('name')
+        profile_picture = data.get('profile_picture')
+        
+        if not user_id or not email:
+            return jsonify({
+                'success': False,
+                'error': 'User ID and email are required'
+            }), 400
+        
+        # Get or create user in backend
+        user = auth_service.get_or_create_user({
+            'sub': user_id,
+            'email': email,
+            'name': name,
+            'picture': profile_picture
+        })
+        
+        # Create JWT token for backend API calls
+        token = auth_service.create_jwt_token(user)
+        
+        return jsonify({
+            'success': True,
+            'token': token,
+            'user': user.to_dict()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to sync user: {str(e)}'
+        }), 500
+
+
 # ==================== HEALTH CHECK ====================
 
 @auth_bp.route("/health", methods=["GET"])

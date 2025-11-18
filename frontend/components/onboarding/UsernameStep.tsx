@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 
 interface UsernameStepProps {
   value: string
@@ -12,6 +13,7 @@ interface UsernameStepProps {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
 
 export default function UsernameStep({ value, onChange, onValidation }: UsernameStepProps) {
+  const { data: session } = useSession()
   const [checking, setChecking] = useState(false)
   const [available, setAvailable] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -21,13 +23,19 @@ export default function UsernameStep({ value, onChange, onValidation }: Username
       setChecking(true)
       setError(null)
       
+      // Get backend token from session
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (session?.backendToken) {
+        headers['Authorization'] = `Bearer ${session.backendToken}`
+      }
+      
       // Call backend API to check username availability
       const response = await fetch(`${API_BASE_URL}/auth/check-username`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authentication token from session
-        },
+        headers,
         body: JSON.stringify({ username })
       })
 
@@ -46,7 +54,7 @@ export default function UsernameStep({ value, onChange, onValidation }: Username
     } finally {
       setChecking(false)
     }
-  }, [onValidation])
+  }, [onValidation, session])
 
   useEffect(() => {
     // Reset states when value changes

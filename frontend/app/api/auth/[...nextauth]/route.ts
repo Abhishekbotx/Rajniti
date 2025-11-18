@@ -1,6 +1,8 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -9,11 +11,45 @@ const handler = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async signIn({ user, account, profile }) {
+      // Sync user with FastAPI backend when they sign in
+      try {
+        if (!account || !profile) return true
+        
+        // Call FastAPI backend to create/update user
+        const response = await fetch(`${API_BASE_URL}/auth/sync-user`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: profile.sub,
+            email: user.email,
+            name: user.name,
+            profile_picture: user.image,
+          })
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Store backend JWT token for future API calls
+          if (data.token) {
+            account.backendToken = data.token
+          }
+        }
+        
+        return true
+      } catch (error) {
+        console.error('Error syncing user with backend:', error)
+        return true // Allow login even if backend sync fails
+      }
+    },
+    async jwt({ token, account, profile, user }) {
       // Persist the OAuth access_token and user info to the token
       if (account) {
         token.accessToken = account.access_token
         token.userId = profile?.sub
+        token.backendToken = account.backendToken
       }
       return token
     },
@@ -22,6 +58,7 @@ const handler = NextAuth({
       if (session.user) {
         session.user.id = token.userId as string
         session.accessToken = token.accessToken as string
+        session.backendToken = token.backendToken as string
       }
       return session
     },

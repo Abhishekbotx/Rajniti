@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import PoliticalInclinationStep from '@/components/onboarding/PoliticalInclinationStep'
 import UsernameStep from '@/components/onboarding/UsernameStep'
 import UserDetailsStep from '@/components/onboarding/UserDetailsStep'
@@ -12,6 +13,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/a
 
 export default function Onboarding() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [usernameValid, setUsernameValid] = useState(false)
@@ -52,12 +54,18 @@ export default function Onboarding() {
   const handleSubmit = async () => {
     setLoading(true)
     try {
+      // Get backend token from session
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (session?.backendToken) {
+        headers['Authorization'] = `Bearer ${session.backendToken}`
+      }
+      
       const response = await fetch(`${API_BASE_URL}/auth/onboarding`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authentication token from session
-        },
+        headers,
         body: JSON.stringify(formData)
       })
 

@@ -32,11 +32,17 @@ export function useOnboardingCheck(redirectIfIncomplete: boolean = true) {
 
       try {
         // Call backend API to check onboarding status
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        }
+        
+        // Add backend token if available
+        if (session.backendToken) {
+          headers['Authorization'] = `Bearer ${session.backendToken}`
+        }
+        
         const response = await fetch(`${API_BASE_URL}/auth/me`, {
-          headers: {
-            'Content-Type': 'application/json',
-            // Add authentication token from session
-          }
+          headers
         })
 
         if (response.ok) {
@@ -50,10 +56,18 @@ export function useOnboardingCheck(redirectIfIncomplete: boolean = true) {
           }
         } else {
           setIsOnboarded(false)
+          // If not onboarded and redirectIfIncomplete, go to onboarding
+          if (redirectIfIncomplete) {
+            router.push('/onboarding')
+          }
         }
       } catch (error) {
         console.error('Error checking onboarding status:', error)
         setIsOnboarded(false)
+        // On error, assume not onboarded and redirect if needed
+        if (redirectIfIncomplete) {
+          router.push('/onboarding')
+        }
       } finally {
         setLoading(false)
       }
