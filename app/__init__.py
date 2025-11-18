@@ -6,8 +6,11 @@ Clean, minimal setup without unnecessary complexity.
 import logging
 import os
 
+from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
+
+load_dotenv()
 
 from app.core.database import init_db
 from app.core.exceptions import RajnitiError
@@ -53,12 +56,12 @@ def _register_routes(app: Flask) -> None:
 
     app.register_blueprint(api_bp)
     app.register_blueprint(auth_bp)
-    
+
     # Configure Google OAuth
-    app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID')
-    app.config['GOOGLE_CLIENT_SECRET'] = os.getenv('GOOGLE_CLIENT_SECRET')
-    app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-    
+    app.config["GOOGLE_CLIENT_ID"] = os.getenv("GOOGLE_CLIENT_ID")
+    app.config["GOOGLE_CLIENT_SECRET"] = os.getenv("GOOGLE_CLIENT_SECRET")
+    app.config["FRONTEND_URL"] = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
     # Initialize OAuth
     auth_service.configure_google_oauth(app)
 
