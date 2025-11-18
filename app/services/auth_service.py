@@ -167,6 +167,7 @@ class AuthService:
     def complete_user_onboarding(
         self,
         user_id: str,
+        username: Optional[str] = None,
         phone: Optional[str] = None,
         state: Optional[str] = None,
         city: Optional[str] = None,
@@ -180,6 +181,7 @@ class AuthService:
         
         Args:
             user_id: User ID
+            username: Unique username
             phone: Phone number
             state: State of residence
             city: City of residence
@@ -202,6 +204,7 @@ class AuthService:
             
             user.complete_onboarding(
                 session=session,
+                username=username,
                 phone=phone,
                 state=state,
                 city=city,
@@ -212,3 +215,17 @@ class AuthService:
             )
             
             return user
+
+    def check_username_available(self, username: str) -> bool:
+        """
+        Check if username is available.
+        
+        Args:
+            username: Username to check
+            
+        Returns:
+            True if username is available, False otherwise
+        """
+        with get_db_session() as session:
+            user = User.get_by_username(session, username)
+            return user is None

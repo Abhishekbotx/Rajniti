@@ -184,6 +184,7 @@ def complete_onboarding(current_user):
     
     Request body:
         {
+            "username": "johndoe",
             "phone": "+91-9876543210",
             "state": "Delhi",
             "city": "New Delhi",
@@ -196,9 +197,22 @@ def complete_onboarding(current_user):
     try:
         data = request.get_json()
         
+        # Validate username if provided
+        username = data.get('username')
+        if username:
+            # Check if username is already taken by another user
+            with get_db_session() as session:
+                existing_user = User.get_by_username(session, username)
+                if existing_user and existing_user.id != current_user.id:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Username is already taken'
+                    }), 400
+        
         # Complete onboarding
         updated_user = auth_service.complete_user_onboarding(
             user_id=current_user.id,
+            username=username,
             phone=data.get('phone'),
             state=data.get('state'),
             city=data.get('city'),
@@ -224,6 +238,49 @@ def complete_onboarding(current_user):
         return jsonify({
             'success': False,
             'error': f'Failed to complete onboarding: {str(e)}'
+        }), 500
+
+
+@auth_bp.route("/check-username", methods=["POST"])
+@token_required
+def check_username(current_user):
+    """
+    Check if a username is available.
+    
+    Request body:
+        {
+            "username": "johndoe"
+        }
+    """
+    try:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        
+        if not username:
+            return jsonify({
+                'success': False,
+                'error': 'Username is required'
+            }), 400
+        
+        # Check if username is available
+        is_available = auth_service.check_username_available(username)
+        
+        # Also check if it's the current user's username
+        if not is_available:
+            with get_db_session() as session:
+                existing_user = User.get_by_username(session, username)
+                if existing_user and existing_user.id == current_user.id:
+                    is_available = True  # Current user can keep their own username
+        
+        return jsonify({
+            'success': True,
+            'available': is_available
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to check username: {str(e)}'
         }), 500
 
 

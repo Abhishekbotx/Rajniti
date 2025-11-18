@@ -3,49 +3,54 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import PoliticalInclinationStep from '@/components/onboarding/PoliticalInclinationStep'
+import UsernameStep from '@/components/onboarding/UsernameStep'
+import UserDetailsStep from '@/components/onboarding/UserDetailsStep'
+import PreferencesStep from '@/components/onboarding/PreferencesStep'
 
 export default function Onboarding() {
   const { data: session } = useSession()
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [usernameValid, setUsernameValid] = useState(false)
   
   const [formData, setFormData] = useState({
+    political_interest: '',
+    username: '',
     phone: '',
     state: '',
     city: '',
     age_group: '',
-    political_interest: '',
     preferred_parties: [] as string[],
     topics_of_interest: [] as string[]
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const updateField = (field: string, value: string | string[]) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [field]: value
     })
   }
 
-  const handleMultiSelect = (field: 'preferred_parties' | 'topics_of_interest', value: string) => {
-    const current = formData[field]
-    if (current.includes(value)) {
-      setFormData({
-        ...formData,
-        [field]: current.filter(item => item !== value)
-      })
-    } else {
-      setFormData({
-        ...formData,
-        [field]: [...current, value]
-      })
+  const canProceedToNextStep = () => {
+    switch (step) {
+      case 1:
+        return formData.political_interest !== ''
+      case 2:
+        return formData.username !== '' && usernameValid
+      case 3:
+        return formData.state !== '' && formData.age_group !== ''
+      case 4:
+        return true // Preferences are optional
+      default:
+        return false
     }
   }
 
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      // In production, this would call your backend API
       const response = await fetch('/api/v1/auth/onboarding', {
         method: 'POST',
         headers: {
@@ -57,33 +62,19 @@ export default function Onboarding() {
 
       if (response.ok) {
         router.push('/dashboard')
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to complete onboarding')
       }
     } catch (error) {
       console.error('Onboarding failed:', error)
+      alert('Failed to complete onboarding. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const parties = [
-    'Bharatiya Janata Party',
-    'Indian National Congress',
-    'Aam Aadmi Party',
-    'Trinamool Congress',
-    'Dravida Munnetra Kazhagam',
-    'Others'
-  ]
-
-  const topics = [
-    'Economy',
-    'Healthcare',
-    'Education',
-    'Infrastructure',
-    'Agriculture',
-    'Environment',
-    'Technology',
-    'Social Justice'
-  ]
+  const totalSteps = 4
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-green-50 py-12 px-4">
@@ -91,167 +82,62 @@ export default function Onboarding() {
         {/* Progress bar */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Step {step} of 2</span>
-            <span className="text-sm text-gray-500">{step === 1 ? 'Basic Details' : 'Political Preferences'}</span>
+            <span className="text-sm font-medium text-gray-700">Step {step} of {totalSteps}</span>
+            <span className="text-sm text-gray-500">
+              {step === 1 && 'Political Inclination'}
+              {step === 2 && 'Username'}
+              {step === 3 && 'Basic Details'}
+              {step === 4 && 'Preferences'}
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-orange-500 to-green-500 h-2 rounded-full transition-all"
-              style={{ width: `${(step / 2) * 100}%` }}
+              className="bg-gradient-to-r from-orange-500 to-green-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(step / totalSteps) * 100}%` }}
             />
           </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {step === 1 ? 'Welcome!' : 'Political Preferences'}
-            </h1>
-            <p className="text-gray-600">
-              {step === 1 
-                ? 'Let\'s get to know you better'
-                : 'Tell us about your political interests'
-              }
-            </p>
-          </div>
-
-          {/* Step 1: Basic Details */}
+          {/* Step 1: Political Inclination */}
           {step === 1 && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number (Optional)
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="+91-9876543210"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  State
-                </label>
-                <select
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                >
-                  <option value="">Select your state</option>
-                  <option value="Delhi">Delhi</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Karnataka">Karnataka</option>
-                  <option value="Tamil Nadu">Tamil Nadu</option>
-                  <option value="Uttar Pradesh">Uttar Pradesh</option>
-                  {/* Add more states */}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Enter your city"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Age Group
-                </label>
-                <select
-                  name="age_group"
-                  value={formData.age_group}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                >
-                  <option value="">Select your age group</option>
-                  <option value="18-25">18-25</option>
-                  <option value="26-35">26-35</option>
-                  <option value="36-50">36-50</option>
-                  <option value="51-65">51-65</option>
-                  <option value="65+">65+</option>
-                </select>
-              </div>
-            </div>
+            <PoliticalInclinationStep
+              value={formData.political_interest}
+              onChange={(value) => updateField('political_interest', value)}
+            />
           )}
 
-          {/* Step 2: Political Preferences */}
+          {/* Step 2: Username */}
           {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Political Interest Level
-                </label>
-                <select
-                  name="political_interest"
-                  value={formData.political_interest}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                >
-                  <option value="">Select interest level</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
+            <UsernameStep
+              value={formData.username}
+              onChange={(value) => updateField('username', value)}
+              onValidation={setUsernameValid}
+            />
+          )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Preferred Parties (Select all that apply)
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {parties.map(party => (
-                    <button
-                      key={party}
-                      type="button"
-                      onClick={() => handleMultiSelect('preferred_parties', party)}
-                      className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                        formData.preferred_parties.includes(party)
-                          ? 'border-orange-500 bg-orange-50 text-orange-700'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-orange-300'
-                      }`}
-                    >
-                      {party}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {/* Step 3: Basic Details */}
+          {step === 3 && (
+            <UserDetailsStep
+              formData={{
+                phone: formData.phone,
+                state: formData.state,
+                city: formData.city,
+                age_group: formData.age_group
+              }}
+              onChange={updateField}
+            />
+          )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Topics of Interest (Select all that apply)
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {topics.map(topic => (
-                    <button
-                      key={topic}
-                      type="button"
-                      onClick={() => handleMultiSelect('topics_of_interest', topic)}
-                      className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                        formData.topics_of_interest.includes(topic)
-                          ? 'border-green-500 bg-green-50 text-green-700'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-green-300'
-                      }`}
-                    >
-                      {topic}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+          {/* Step 4: Preferences */}
+          {step === 4 && (
+            <PreferencesStep
+              formData={{
+                preferred_parties: formData.preferred_parties,
+                topics_of_interest: formData.topics_of_interest
+              }}
+              onChange={(field, values) => updateField(field, values)}
+            />
           )}
 
           {/* Navigation buttons */}
@@ -265,10 +151,11 @@ export default function Onboarding() {
               </button>
             )}
             
-            {step < 2 ? (
+            {step < totalSteps ? (
               <button
                 onClick={() => setStep(step + 1)}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg text-white font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg"
+                disabled={!canProceedToNextStep()}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg text-white font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue
               </button>
