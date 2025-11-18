@@ -47,7 +47,7 @@ def check_environment_variables() -> None:
         "FLASK_PORT": {
             "required": False,
             "description": "Server port",
-            "default": "8080",
+            "default": "8000",
         },
         "FLASK_DEBUG": {
             "required": False,

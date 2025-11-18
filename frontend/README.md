@@ -74,7 +74,7 @@ cp .env.local.example .env.local
 Edit `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 For Netlify deployment, set environment variables in:
