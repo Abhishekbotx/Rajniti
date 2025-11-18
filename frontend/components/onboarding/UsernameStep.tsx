@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface UsernameStepProps {
   value: string
@@ -13,36 +13,7 @@ export default function UsernameStep({ value, onChange, onValidation }: Username
   const [available, setAvailable] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Reset states when value changes
-    setAvailable(null)
-    setError(null)
-    
-    if (!value || value.length < 3) {
-      onValidation(false)
-      if (value && value.length < 3) {
-        setError('Username must be at least 3 characters')
-      }
-      return
-    }
-
-    // Validate username format (alphanumeric and underscores only)
-    const usernameRegex = /^[a-zA-Z0-9_]+$/
-    if (!usernameRegex.test(value)) {
-      setError('Username can only contain letters, numbers, and underscores')
-      onValidation(false)
-      return
-    }
-
-    // Check availability with debounce
-    const timer = setTimeout(() => {
-      checkUsername(value)
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [value])
-
-  const checkUsername = async (username: string) => {
+  const checkUsername = useCallback(async (username: string) => {
     try {
       setChecking(true)
       setError(null)
@@ -73,7 +44,36 @@ export default function UsernameStep({ value, onChange, onValidation }: Username
     } finally {
       setChecking(false)
     }
-  }
+  }, [onValidation])
+
+  useEffect(() => {
+    // Reset states when value changes
+    setAvailable(null)
+    setError(null)
+    
+    if (!value || value.length < 3) {
+      onValidation(false)
+      if (value && value.length < 3) {
+        setError('Username must be at least 3 characters')
+      }
+      return
+    }
+
+    // Validate username format (alphanumeric and underscores only)
+    const usernameRegex = /^[a-zA-Z0-9_]+$/
+    if (!usernameRegex.test(value)) {
+      setError('Username can only contain letters, numbers, and underscores')
+      onValidation(false)
+      return
+    }
+
+    // Check availability with debounce
+    const timer = setTimeout(() => {
+      checkUsername(value)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [value, checkUsername, onValidation])
 
   return (
     <div className="space-y-4">

@@ -41,7 +41,7 @@ const API_BASE_URL =
 
 export default function Dashboard() {
     // Check onboarding status and redirect if not completed
-    const { isOnboarded, loading: onboardingLoading } = useOnboardingCheck(true)
+    const { loading: onboardingLoading } = useOnboardingCheck(true)
     
     const [selectedElection, setSelectedElection] = useState<Election | null>(
         null

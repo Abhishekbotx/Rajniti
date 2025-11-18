@@ -28,6 +28,7 @@ def test_user_to_dict():
         id="test_123",
         email="test@example.com",
         name="Test User",
+        username="testuser",
         phone="+91-9876543210",
         state="Delhi",
         city="New Delhi",
@@ -43,6 +44,7 @@ def test_user_to_dict():
     assert user_dict['id'] == "test_123"
     assert user_dict['email'] == "test@example.com"
     assert user_dict['name'] == "Test User"
+    assert user_dict['username'] == "testuser"
     assert user_dict['phone'] == "+91-9876543210"
     assert user_dict['state'] == "Delhi"
     assert user_dict['city'] == "New Delhi"
@@ -56,7 +58,7 @@ def test_user_to_dict():
 def test_user_model_fields():
     """Test User model has all required fields."""
     required_fields = [
-        'id', 'email', 'name', 'profile_picture',
+        'id', 'email', 'name', 'username', 'profile_picture',
         'phone', 'state', 'city', 'age_group',
         'political_interest', 'preferred_parties', 'topics_of_interest',
         'onboarding_completed', 'created_at', 'updated_at', 'last_login'
@@ -81,6 +83,7 @@ def test_auth_service_imports():
     assert hasattr(auth_service, 'create_jwt_token')
     assert hasattr(auth_service, 'verify_jwt_token')
     assert hasattr(auth_service, 'get_user_from_token')
+    assert hasattr(auth_service, 'check_username_available')
 
 
 def test_auth_routes_import():
