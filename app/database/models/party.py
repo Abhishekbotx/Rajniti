@@ -5,6 +5,7 @@ Party database model with CRUD operations.
 from typing import List, Optional
 
 from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from ..base import Base
@@ -153,3 +154,47 @@ class Party(Base):
         session.bulk_save_objects(party_objects, return_defaults=True)
         session.flush()
         return party_objects
+
+    @classmethod
+    def bulk_upsert(cls, session: Session, parties: List[dict]) -> int:
+        """
+        Upsert multiple parties at once (insert if not exists, update if exists).
+
+        Uses PostgreSQL's ON CONFLICT DO UPDATE for efficient upsert operations.
+        If a party with the same primary key exists, it will be updated with new values.
+
+        Args:
+            session: Database session
+            parties: List of party dictionaries
+
+        Returns:
+            Number of records processed (inserted or updated)
+        """
+        if not parties:
+            return 0
+
+        # Prepare data for bulk insert
+        values = [
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "short_name": p["short_name"],
+                "symbol": p.get("symbol", ""),
+            }
+            for p in parties
+        ]
+
+        # Use PostgreSQL's ON CONFLICT DO UPDATE
+        stmt = pg_insert(cls.__table__).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["id"],
+            set_={
+                "name": stmt.excluded.name,
+                "short_name": stmt.excluded.short_name,
+                "symbol": stmt.excluded.symbol,
+            },
+        )
+
+        session.execute(stmt)
+        session.flush()
+        return len(parties)
