@@ -71,8 +71,8 @@ cd rajniti
 # Start with Docker Compose
 docker-compose up -d
 
-# API available at http://localhost:8080
-# Health check: http://localhost:8080/api/v1/health
+# API available at http://localhost:8000
+# Health check: http://localhost:8000/api/v1/health
 ```
 
 ### **Option 2: Local Installation (Automated)**
@@ -700,8 +700,8 @@ chmod +x scripts/scrape_all.py
 
 ### **🎯 Simple API Documentation**
 
--   **API Base URL**: `http://localhost:8080/api/v1/`
--   **Health Check**: `http://localhost:8080/api/v1/health`
+-   **API Base URL**: `http://localhost:8000/api/v1/`
+-   **Health Check**: `http://localhost:8000/api/v1/health`
 
 ### **🔥 Core Endpoints**
 
@@ -748,29 +748,29 @@ GET /api/v1/parties/{name}/performance            # Party performance
 
 ```bash
 # Get all elections
-curl "http://localhost:8080/api/v1/elections"
+curl "http://localhost:8000/api/v1/elections"
 
 # Search for candidates named "Modi"
-curl "http://localhost:8080/api/v1/candidates/search?q=modi"
+curl "http://localhost:8000/api/v1/candidates/search?q=modi"
 
 # Get Lok Sabha 2024 winners
-curl "http://localhost:8080/api/v1/elections/lok-sabha-2024/winners"
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/winners"
 
 # Get all parties
-curl "http://localhost:8080/api/v1/parties"
+curl "http://localhost:8000/api/v1/parties"
 ```
 
 ### **Filtering Examples**
 
 ```bash
 # Get candidates by party
-curl "http://localhost:8080/api/v1/candidates/party/Bharatiya%20Janata%20Party"
+curl "http://localhost:8000/api/v1/candidates/party/Bharatiya%20Janata%20Party"
 
 # Get constituency candidates
-curl "http://localhost:8080/api/v1/elections/delhi-assembly-2025/constituencies/DL-1/candidates"
+curl "http://localhost:8000/api/v1/elections/delhi-assembly-2025/constituencies/DL-1/candidates"
 
 # Get party performance
-curl "http://localhost:8080/api/v1/parties/Bharatiya%20Janata%20Party/performance"
+curl "http://localhost:8000/api/v1/parties/Bharatiya%20Janata%20Party/performance"
 ```
 
 ### **Python Integration**
@@ -779,7 +779,7 @@ curl "http://localhost:8080/api/v1/parties/Bharatiya%20Janata%20Party/performanc
 import requests
 
 # Simple API client
-BASE_URL = "http://localhost:8080/api/v1"
+BASE_URL = "http://localhost:8000/api/v1"
 
 # Search for candidates
 response = requests.get(f"{BASE_URL}/candidates/search", params={"q": "modi"})
@@ -903,7 +903,7 @@ python run.py
 Check database connectivity via the health endpoint:
 
 ```bash
-curl http://localhost:8080/api/v1/health
+curl http://localhost:8000/api/v1/health
 ```
 
 Response with database connected:
@@ -1133,7 +1133,7 @@ services:
     rajniti-api:
         build: .
         ports:
-            - "8080:8080"
+            - "8000:8000"
         environment:
             - FLASK_ENV=production
             - SECRET_KEY=${SECRET_KEY}
