@@ -36,7 +36,7 @@ class User(Base):
     age_group = Column(String, nullable=True)  # e.g., "18-25", "26-35", etc.
     
     # Political preferences
-    political_interest = Column(String, nullable=True)  # e.g., "High", "Medium", "Low"
+    political_interest = Column(String, nullable=True)  # e.g., "Rightist", "Leftist", "Communist", "Centrist", "Libertarian", "Neutral"
     preferred_parties = Column(Text, nullable=True)  # Comma-separated party names
     topics_of_interest = Column(Text, nullable=True)  # Comma-separated topics
     

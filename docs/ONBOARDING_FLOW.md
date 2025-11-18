@@ -6,10 +6,13 @@ This document describes the complete user onboarding flow implemented in the Raj
 ## Onboarding Steps
 
 ### Step 1: Political Inclination (Single Select)
-User selects their level of political interest:
-- **High**: Actively follows politics and votes regularly
-- **Medium**: Stays informed and participates occasionally
-- **Low**: Basic awareness of major events
+User selects their political inclination:
+- **Rightist**: Conservative, traditional values, free market economy
+- **Leftist**: Progressive, social equality, welfare policies
+- **Communist**: Collective ownership, socialist principles
+- **Centrist**: Moderate, balanced approach to politics
+- **Libertarian**: Individual liberty, minimal government intervention
+- **Neutral/Apolitical**: No strong political alignment
 
 ### Step 2: Username (Unique)
 User chooses a unique username:
@@ -57,7 +60,7 @@ Authorization: Bearer <token>
 
 Request:
 {
-  "political_interest": "High",
+  "political_interest": "Rightist",
   "username": "johndoe",
   "phone": "+91-9876543210",
   "state": "Delhi",

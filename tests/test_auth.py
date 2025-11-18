@@ -33,7 +33,7 @@ def test_user_to_dict():
         state="Delhi",
         city="New Delhi",
         age_group="26-35",
-        political_interest="High",
+        political_interest="Rightist",
         preferred_parties="BJP,INC",
         topics_of_interest="Economy,Healthcare",
         onboarding_completed=True
@@ -49,7 +49,7 @@ def test_user_to_dict():
     assert user_dict['state'] == "Delhi"
     assert user_dict['city'] == "New Delhi"
     assert user_dict['age_group'] == "26-35"
-    assert user_dict['political_interest'] == "High"
+    assert user_dict['political_interest'] == "Rightist"
     assert user_dict['preferred_parties'] == ["BJP", "INC"]
     assert user_dict['topics_of_interest'] == ["Economy", "Healthcare"]
     assert user_dict['onboarding_completed'] is True

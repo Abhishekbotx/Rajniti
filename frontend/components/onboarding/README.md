@@ -9,7 +9,7 @@ Single-select component for choosing political interest level.
 - **Props**: 
   - `value`: Current selected value
   - `onChange`: Callback when selection changes
-- **Options**: High, Medium, Low
+- **Options**: Rightist, Leftist, Communist, Centrist, Libertarian, Neutral
 
 ### UsernameStep
 Component for entering and validating a unique username.

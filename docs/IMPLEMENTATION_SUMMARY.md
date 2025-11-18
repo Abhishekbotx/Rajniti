@@ -1,7 +1,7 @@
 # User Onboarding Implementation - Complete Summary
 
 ## Issue Requirements
-✅ **Political Inclination** - Single Select (High/Medium/Low)
+✅ **Political Inclination** - Single Select (Rightist/Leftist/Communist/Centrist/Libertarian/Neutral)
 ✅ **Username** - Unique field with real-time validation
 ✅ **Other Details** - Phone, State, City, Age Group
 ✅ **Separate Reusable Components** - Created 4 modular components

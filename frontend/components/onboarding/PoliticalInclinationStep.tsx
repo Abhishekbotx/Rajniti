@@ -7,9 +7,12 @@ interface PoliticalInclinationStepProps {
 
 export default function PoliticalInclinationStep({ value, onChange }: PoliticalInclinationStepProps) {
   const options = [
-    { value: 'High', label: 'High', description: 'I actively follow politics and vote regularly' },
-    { value: 'Medium', label: 'Medium', description: 'I stay informed and participate occasionally' },
-    { value: 'Low', label: 'Low', description: 'I have basic awareness of major events' }
+    { value: 'Rightist', label: 'Rightist', description: 'Conservative, traditional values, free market economy' },
+    { value: 'Leftist', label: 'Leftist', description: 'Progressive, social equality, welfare policies' },
+    { value: 'Communist', label: 'Communist', description: 'Collective ownership, socialist principles' },
+    { value: 'Centrist', label: 'Centrist', description: 'Moderate, balanced approach to politics' },
+    { value: 'Libertarian', label: 'Libertarian', description: 'Individual liberty, minimal government intervention' },
+    { value: 'Neutral', label: 'Neutral/Apolitical', description: 'No strong political alignment' }
   ]
 
   return (
@@ -19,7 +22,7 @@ export default function PoliticalInclinationStep({ value, onChange }: PoliticalI
           Political Inclination
         </h2>
         <p className="text-gray-600">
-          How would you describe your level of political interest?
+          What best describes your political inclination?
         </p>
       </div>
 

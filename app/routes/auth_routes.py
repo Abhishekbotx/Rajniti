@@ -189,7 +189,7 @@ def complete_onboarding(current_user):
             "state": "Delhi",
             "city": "New Delhi",
             "age_group": "26-35",
-            "political_interest": "High",
+            "political_interest": "Rightist",
             "preferred_parties": ["Bharatiya Janata Party", "Indian National Congress"],
             "topics_of_interest": ["Economy", "Healthcare", "Education"]
         }

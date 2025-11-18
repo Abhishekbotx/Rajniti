@@ -133,7 +133,7 @@ alembic upgrade head
         "state": "Delhi",
         "city": "New Delhi",
         "age_group": "26-35",
-        "political_interest": "High",
+        "political_interest": "Rightist",
         "preferred_parties": [
             "Bharatiya Janata Party",
             "Indian National Congress"
@@ -229,7 +229,7 @@ updated_user = auth_service.update_user_profile(
 # Complete onboarding
 completed_user = auth_service.complete_user_onboarding(
     user_id="google_user_id",
-    political_interest="High",
+    political_interest="Rightist",
     preferred_parties=["BJP", "INC"],
     topics_of_interest=["Economy", "Healthcare"]
 )
@@ -316,7 +316,7 @@ CREATE TABLE users (
     state VARCHAR,                       -- State of residence
     city VARCHAR,                        -- City of residence
     age_group VARCHAR,                   -- Age group (18-25, 26-35, etc.)
-    political_interest VARCHAR,          -- High, Medium, Low
+    political_interest VARCHAR,          -- Rightist, Leftist, Communist, Centrist, Libertarian, Neutral
     preferred_parties TEXT,              -- Comma-separated party names
     topics_of_interest TEXT,             -- Comma-separated topics
     onboarding_completed BOOLEAN DEFAULT FALSE,
