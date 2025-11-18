@@ -140,19 +140,54 @@ def update_profile(current_user):
     
     Request body:
         {
+            "username": "johndoe123",
             "name": "John Doe",
             "phone": "+91-9876543210",
             "state": "Delhi",
             "city": "New Delhi",
             "age_group": "26-35"
         }
+    
+    Note: Email cannot be changed.
     """
     try:
         data = request.get_json()
         
+        # Email cannot be changed
+        if 'email' in data:
+            return jsonify({
+                'success': False,
+                'error': 'Email cannot be changed'
+            }), 400
+        
         # Allowed fields for update
-        allowed_fields = ['name', 'phone', 'state', 'city', 'age_group']
+        allowed_fields = ['username', 'name', 'phone', 'state', 'city', 'age_group']
         update_data = {k: v for k, v in data.items() if k in allowed_fields}
+        
+        # If username is being updated, check if it's available
+        if 'username' in update_data and update_data['username']:
+            username = update_data['username'].strip()
+            
+            # Validate username
+            if len(username) < 3 or len(username) > 30:
+                return jsonify({
+                    'success': False,
+                    'error': 'Username must be between 3 and 30 characters'
+                }), 400
+            
+            if not username.replace('_', '').isalnum():
+                return jsonify({
+                    'success': False,
+                    'error': 'Username can only contain letters, numbers, and underscores'
+                }), 400
+            
+            # Check if username is already taken by another user
+            if current_user.username != username:
+                if not auth_service.check_username_availability(username):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Username is already taken'
+                    }), 400
         
         # Update user
         updated_user = auth_service.update_user_profile(current_user.id, **update_data)
@@ -224,6 +259,75 @@ def complete_onboarding(current_user):
         return jsonify({
             'success': False,
             'error': f'Failed to complete onboarding: {str(e)}'
+        }), 500
+
+
+# ==================== USERNAME CHECKER ====================
+
+@auth_bp.route("/check-username", methods=["POST"])
+def check_username():
+    """
+    Check if username is available.
+    
+    Request body:
+        {
+            "username": "johndoe123"
+        }
+    
+    Response:
+        {
+            "success": true,
+            "available": true/false,
+            "message": "Username is available" or "Username is already taken"
+        }
+    """
+    try:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        
+        # Validate username
+        if not username:
+            return jsonify({
+                'success': False,
+                'error': 'Username is required'
+            }), 400
+        
+        # Username validation rules
+        if len(username) < 3:
+            return jsonify({
+                'success': False,
+                'available': False,
+                'message': 'Username must be at least 3 characters long'
+            }), 200
+        
+        if len(username) > 30:
+            return jsonify({
+                'success': False,
+                'available': False,
+                'message': 'Username must be at most 30 characters long'
+            }), 200
+        
+        # Check if username contains only alphanumeric characters and underscores
+        if not username.replace('_', '').isalnum():
+            return jsonify({
+                'success': False,
+                'available': False,
+                'message': 'Username can only contain letters, numbers, and underscores'
+            }), 200
+        
+        # Check if username is available
+        available = auth_service.check_username_availability(username)
+        
+        return jsonify({
+            'success': True,
+            'available': available,
+            'message': 'Username is available' if available else 'Username is already taken'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to check username: {str(e)}'
         }), 500
 
 

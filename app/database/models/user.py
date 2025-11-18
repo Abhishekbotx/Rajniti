@@ -23,6 +23,7 @@ class User(Base):
     # Primary identification
     id = Column(String, primary_key=True, index=True)  # Google user ID
     email = Column(String, unique=True, nullable=False, index=True)
+    username = Column(String, unique=True, nullable=True, index=True)
     
     # Basic profile information
     name = Column(String, nullable=True)
@@ -94,6 +95,16 @@ class User(Base):
     def get_by_email(cls, session: Session, email: str) -> Optional["User"]:
         """Get user by email."""
         return session.query(cls).filter(cls.email == email).first()
+
+    @classmethod
+    def get_by_username(cls, session: Session, username: str) -> Optional["User"]:
+        """Get user by username."""
+        return session.query(cls).filter(cls.username == username).first()
+
+    @classmethod
+    def is_username_available(cls, session: Session, username: str) -> bool:
+        """Check if username is available."""
+        return session.query(cls).filter(cls.username == username).first() is None
 
     @classmethod
     def get_all(cls, session: Session) -> List["User"]:
@@ -177,6 +188,7 @@ class User(Base):
         return {
             "id": self.id,
             "email": self.email,
+            "username": self.username,
             "name": self.name,
             "profile_picture": self.profile_picture,
             "phone": self.phone,

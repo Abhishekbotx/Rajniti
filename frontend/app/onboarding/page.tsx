@@ -9,8 +9,11 @@ export default function Onboarding() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
+  const [checkingUsername, setCheckingUsername] = useState(false)
   
   const [formData, setFormData] = useState({
+    username: '',
     phone: '',
     state: '',
     city: '',
@@ -21,10 +24,49 @@ export default function Onboarding() {
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     })
+
+    // Reset username availability when username changes
+    if (name === 'username') {
+      setUsernameAvailable(null)
+    }
+  }
+
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailable(null)
+      return
+    }
+
+    setCheckingUsername(true)
+    try {
+      const response = await fetch('/api/v1/auth/check-username', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setUsernameAvailable(data.available)
+      }
+    } catch (error) {
+      console.error('Error checking username:', error)
+    } finally {
+      setCheckingUsername(false)
+    }
+  }
+
+  const handleUsernameBlur = () => {
+    if (formData.username && formData.username.length >= 3) {
+      checkUsernameAvailability(formData.username)
+    }
   }
 
   const handleMultiSelect = (field: 'preferred_parties' | 'topics_of_interest', value: string) => {
@@ -119,6 +161,36 @@ export default function Onboarding() {
           {/* Step 1: Basic Details */}
           {step === 1 && (
             <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Username
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    onBlur={handleUsernameBlur}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Choose a unique username"
+                  />
+                  {checkingUsername && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-orange-500 border-t-transparent"></div>
+                    </div>
+                  )}
+                </div>
+                {formData.username.length >= 3 && usernameAvailable !== null && !checkingUsername && (
+                  <p className={`text-sm mt-1 ${usernameAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                    {usernameAvailable ? '✓ Username is available' : '✗ Username is already taken'}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Username must be 3-30 characters and can only contain letters, numbers, and underscores
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Phone Number (Optional)
@@ -268,7 +340,8 @@ export default function Onboarding() {
             {step < 2 ? (
               <button
                 onClick={() => setStep(step + 1)}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg text-white font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg"
+                disabled={formData.username && usernameAvailable === false}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg text-white font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue
               </button>

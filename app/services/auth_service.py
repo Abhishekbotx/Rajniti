@@ -212,3 +212,16 @@ class AuthService:
             )
             
             return user
+
+    def check_username_availability(self, username: str) -> bool:
+        """
+        Check if a username is available.
+        
+        Args:
+            username: Username to check
+            
+        Returns:
+            True if username is available, False otherwise
+        """
+        with get_db_session() as session:
+            return User.is_username_available(session, username)
