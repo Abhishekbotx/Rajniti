@@ -7,6 +7,9 @@ import UsernameStep from '@/components/onboarding/UsernameStep'
 import UserDetailsStep from '@/components/onboarding/UserDetailsStep'
 import PreferencesStep from '@/components/onboarding/PreferencesStep'
 
+// API Base URL - configurable via environment variable
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+
 export default function Onboarding() {
   const router = useRouter()
   const [step, setStep] = useState(1)
@@ -49,7 +52,7 @@ export default function Onboarding() {
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/v1/auth/onboarding', {
+      const response = await fetch(`${API_BASE_URL}/auth/onboarding`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

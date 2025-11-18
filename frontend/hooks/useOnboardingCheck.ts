@@ -4,6 +4,9 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
+// API Base URL - configurable via environment variable
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+
 export function useOnboardingCheck(redirectIfIncomplete: boolean = true) {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -29,7 +32,7 @@ export function useOnboardingCheck(redirectIfIncomplete: boolean = true) {
 
       try {
         // Call backend API to check onboarding status
-        const response = await fetch('/api/v1/auth/me', {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
           headers: {
             'Content-Type': 'application/json',
             // Add authentication token from session

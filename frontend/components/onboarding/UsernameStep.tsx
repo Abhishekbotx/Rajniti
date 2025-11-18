@@ -8,6 +8,9 @@ interface UsernameStepProps {
   onValidation: (isValid: boolean) => void
 }
 
+// API Base URL - configurable via environment variable
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+
 export default function UsernameStep({ value, onChange, onValidation }: UsernameStepProps) {
   const [checking, setChecking] = useState(false)
   const [available, setAvailable] = useState<boolean | null>(null)
@@ -18,9 +21,8 @@ export default function UsernameStep({ value, onChange, onValidation }: Username
       setChecking(true)
       setError(null)
       
-      // In a real implementation, this would call the backend API
-      // For now, we'll simulate the check
-      const response = await fetch('/api/v1/auth/check-username', {
+      // Call backend API to check username availability
+      const response = await fetch(`${API_BASE_URL}/auth/check-username`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
