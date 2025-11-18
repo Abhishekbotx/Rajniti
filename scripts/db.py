@@ -16,13 +16,17 @@ import argparse
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.database import init_db
 from app.database.base import Base
-from app.database.session import engine
 from app.database.migrate import sync_db
+from app.database.session import engine
 
 
 def cmd_init():
@@ -68,7 +72,7 @@ def cmd_sync():
     """Sync database with models (auto-generate and run migrations)."""
     print("🔄 Syncing database with models...")
     print("   This will auto-generate migrations and apply them.\n")
-    
+
     try:
         success = sync_db()
         if success:
@@ -97,7 +101,9 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # Sync command
-    subparsers.add_parser("sync", help="Sync DB with models (auto-generate & run migrations)")
+    subparsers.add_parser(
+        "sync", help="Sync DB with models (auto-generate & run migrations)"
+    )
 
     # Init command
     subparsers.add_parser("init", help="Initialize database (create tables)")
@@ -106,7 +112,9 @@ def main():
     subparsers.add_parser("reset", help="Reset database (drop and recreate tables)")
 
     # Migrate command
-    migrate_parser = subparsers.add_parser("migrate", help="Migrate JSON data to database")
+    migrate_parser = subparsers.add_parser(
+        "migrate", help="Migrate JSON data to database"
+    )
     migrate_parser.add_argument(
         "--dry-run", action="store_true", help="Preview without making changes"
     )
