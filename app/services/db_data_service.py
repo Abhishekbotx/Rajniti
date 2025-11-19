@@ -7,6 +7,8 @@ Works with both local PostgreSQL and Supabase.
 
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import func
+
 from app.database import get_db_session
 from app.database.models import Candidate as DbCandidate
 from app.database.models import Constituency as DbConstituency
@@ -61,8 +63,37 @@ class DbDataService(DataService):
 
         with get_db_session() as session:
             db_candidates = DbCandidate.get_all(session, skip=0, limit=10000)
-            # Convert to dict format for API compatibility
-            return [self._candidate_to_dict(c, session, election_id) for c in db_candidates]
+            
+            if not db_candidates:
+                return []
+            
+            # Batch load parties and constituencies to avoid N+1 queries
+            party_ids = {c.party_id for c in db_candidates}
+            constituency_ids = {c.constituency_id for c in db_candidates}
+            
+            # Load all parties and constituencies in one query each
+            # Handle empty sets to avoid SQLAlchemy errors
+            parties = {}
+            if party_ids:
+                parties = {
+                    p.id: p 
+                    for p in session.query(DbParty).filter(DbParty.id.in_(party_ids)).all()
+                }
+            
+            constituencies = {}
+            if constituency_ids:
+                constituencies = {
+                    c.id: c 
+                    for c in session.query(DbConstituency)
+                    .filter(DbConstituency.id.in_(constituency_ids))
+                    .all()
+                }
+            
+            # Convert to dict format for API compatibility using caches
+            return [
+                self._candidate_to_dict(c, session, election_id, parties, constituencies)
+                for c in db_candidates
+            ]
 
     def get_parties(self, election_id: str) -> List[Party]:
         """Get all parties for an election"""
@@ -181,8 +212,83 @@ class DbDataService(DataService):
                 )
             return None
 
+    def get_election_statistics(self, election_id: str) -> Dict[str, int]:
+        """
+        Get statistics for an election using efficient COUNT queries.
+        This avoids fetching all records when we only need counts.
+        """
+        with get_db_session() as session:
+            # Use COUNT queries instead of fetching all records
+            total_candidates = session.query(func.count(DbCandidate.id)).scalar() or 0
+            total_winners = (
+                session.query(func.count(DbCandidate.id))
+                .filter(DbCandidate.status == "WON")
+                .scalar()
+                or 0
+            )
+            total_parties = session.query(func.count(func.distinct(DbParty.id))).scalar() or 0
+            total_constituencies = (
+                session.query(func.count(func.distinct(DbConstituency.id))).scalar() or 0
+            )
+
+            return {
+                "total_candidates": total_candidates,
+                "total_parties": total_parties,
+                "total_constituencies": total_constituencies,
+                "total_winners": total_winners,
+            }
+
+    def get_party_seat_counts(self, election_id: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Get party-wise seat counts using efficient SQL GROUP BY query.
+        Returns top parties by seats won.
+        """
+        with get_db_session() as session:
+            # Use SQL GROUP BY to count seats per party efficiently
+            party_seats = (
+                session.query(
+                    DbCandidate.party_id,
+                    func.count(DbCandidate.id).label("seats_won")
+                )
+                .filter(DbCandidate.status == "WON")
+                .group_by(DbCandidate.party_id)
+                .order_by(func.count(DbCandidate.id).desc())
+                .limit(limit)
+                .all()
+            )
+            
+            # Get party details for the top parties
+            party_ids = [party_id for party_id, _ in party_seats]
+            parties = {}
+            if party_ids:
+                parties = {
+                    p.id: p 
+                    for p in session.query(DbParty).filter(DbParty.id.in_(party_ids)).all()
+                }
+            
+            # Build result list
+            result = []
+            for party_id, seats_won in party_seats:
+                party = parties.get(party_id)
+                if party:
+                    result.append({
+                        "party_name": party.name,
+                        "party_short_name": party.short_name,
+                        "seats_won": seats_won,
+                    })
+                elif party_id == "UNKNOWN" or not party:
+                    result.append({
+                        "party_name": "INDEPENDENT",
+                        "party_short_name": "IND",
+                        "seats_won": seats_won,
+                    })
+            
+            return result
+
     def _candidate_to_dict(
-        self, candidate: DbCandidate, session, election_id: str
+        self, candidate: DbCandidate, session, election_id: str, 
+        party_cache: Optional[Dict[str, DbParty]] = None,
+        constituency_cache: Optional[Dict[str, DbConstituency]] = None
     ) -> Dict[str, Any]:
         """
         Convert database candidate to dictionary format with enriched data.
@@ -190,18 +296,28 @@ class DbDataService(DataService):
         Args:
             candidate: Database candidate model
             session: Database session for fetching related data
+            election_id: Election ID
+            party_cache: Optional cache of parties to avoid N+1 queries
+            constituency_cache: Optional cache of constituencies to avoid N+1 queries
 
         Returns:
             Dictionary with candidate data including party and constituency details
         """
-        # Get party details
-        party = DbParty.get_by_id(session, candidate.party_id)
+        # Use cache if provided, otherwise fetch individually
+        if party_cache is not None:
+            party = party_cache.get(candidate.party_id)
+        else:
+            party = DbParty.get_by_id(session, candidate.party_id)
+        
         party_name = party.name if party else "Unknown"
         party_short_name = party.short_name if party else "UNK"
         party_symbol = party.symbol if party else ""
 
-        # Get constituency details
-        constituency = DbConstituency.get_by_id(session, candidate.constituency_id)
+        if constituency_cache is not None:
+            constituency = constituency_cache.get(candidate.constituency_id)
+        else:
+            constituency = DbConstituency.get_by_id(session, candidate.constituency_id)
+        
         constituency_name = constituency.name if constituency else "Unknown"
         constituency_state_id = constituency.state_id if constituency else ""
 

@@ -52,18 +52,10 @@ def create_app():
 def _register_routes(app: Flask) -> None:
     """Register API routes"""
     from app.routes.api_routes import api_bp
-    from app.routes.auth_routes import auth_bp, auth_service
+    from app.routes.user_routes import user_bp
 
     app.register_blueprint(api_bp)
-    app.register_blueprint(auth_bp)
-
-    # Configure Google OAuth
-    app.config["GOOGLE_CLIENT_ID"] = os.getenv("GOOGLE_CLIENT_ID")
-    app.config["GOOGLE_CLIENT_SECRET"] = os.getenv("GOOGLE_CLIENT_SECRET")
-    app.config["FRONTEND_URL"] = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
-    # Initialize OAuth
-    auth_service.configure_google_oauth(app)
+    app.register_blueprint(user_bp)
 
 
 def _register_error_handlers(app: Flask) -> None:

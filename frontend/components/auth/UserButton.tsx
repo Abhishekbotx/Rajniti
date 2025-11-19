@@ -42,17 +42,10 @@ export default function UserButton() {
           </div>
           
           <a
-            href="/profile"
+            href="/profile/edit"
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 transition-colors"
           >
             Edit Profile
-          </a>
-          
-          <a
-            href="/onboarding"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 transition-colors"
-          >
-            Complete Profile
           </a>
           
           <button

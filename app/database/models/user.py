@@ -27,6 +27,7 @@ class User(Base):
     
     # Basic profile information
     name = Column(String, nullable=True)
+    username = Column(String, unique=True, nullable=True, index=True)
     profile_picture = Column(String, nullable=True)
     
     # Onboarding information
@@ -36,7 +37,7 @@ class User(Base):
     age_group = Column(String, nullable=True)  # e.g., "18-25", "26-35", etc.
     
     # Political preferences
-    political_interest = Column(String, nullable=True)  # e.g., "High", "Medium", "Low"
+    political_interest = Column(String, nullable=True)  # e.g., "Rightist", "Leftist", "Communist", "Centrist", "Libertarian", "Neutral"
     preferred_parties = Column(Text, nullable=True)  # Comma-separated party names
     topics_of_interest = Column(Text, nullable=True)  # Comma-separated topics
     
@@ -136,6 +137,7 @@ class User(Base):
     def complete_onboarding(
         self,
         session: Session,
+        username: Optional[str] = None,
         phone: Optional[str] = None,
         state: Optional[str] = None,
         city: Optional[str] = None,
@@ -149,6 +151,7 @@ class User(Base):
 
         Args:
             session: Database session
+            username: Unique username
             phone: Phone number
             state: State of residence
             city: City of residence
@@ -160,6 +163,7 @@ class User(Base):
         Returns:
             Updated user object
         """
+        self.username = username
         self.phone = phone
         self.state = state
         self.city = city
@@ -182,6 +186,11 @@ class User(Base):
         """Delete user."""
         session.delete(self)
         session.flush()
+
+    @classmethod
+    def get_by_username(cls, session: Session, username: str) -> Optional["User"]:
+        """Get user by username."""
+        return session.query(cls).filter(cls.username == username).first()
 
     def to_dict(self) -> dict:
         """Convert user to dictionary."""
