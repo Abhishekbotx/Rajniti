@@ -102,7 +102,7 @@ class UserService:
         user_id: str,
         username: Optional[str] = None,
         political_interest: Optional[str] = None,
-    ) -> Optional[User]:
+    ) -> Optional[dict]:
         """
         Complete user onboarding with political inclination and username.
         
@@ -112,7 +112,7 @@ class UserService:
             political_interest: Level of political interest
             
         Returns:
-            Updated user object or None if user not found
+            Updated user dictionary or None if user not found
         """
         with get_db_session() as session:
             user = User.get_by_id(session, user_id)
@@ -126,9 +126,10 @@ class UserService:
                 user.political_interest = political_interest
             user.onboarding_completed = True
             user.updated_at = datetime.utcnow()
-            session.flush()
+            session.commit()
             
-            return user
+            # Convert to dict while session is still open to avoid detached instance error
+            return user.to_dict()
 
     def check_username_available(self, username: str, exclude_user_id: Optional[str] = None) -> bool:
         """
