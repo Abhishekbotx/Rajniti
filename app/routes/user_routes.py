@@ -171,13 +171,13 @@ def complete_onboarding(user_id):
                     }), 400
         
         # Complete onboarding - only political_interest and username
-        updated_user = user_service.complete_user_onboarding(
+        user_dict = user_service.complete_user_onboarding(
             user_id=user_id,
             username=username,
             political_interest=data.get('political_interest')
         )
         
-        if not updated_user:
+        if not user_dict:
             return jsonify({
                 'success': False,
                 'error': 'User not found'
@@ -185,7 +185,7 @@ def complete_onboarding(user_id):
         
         return jsonify({
             'success': True,
-            'data': updated_user.to_dict(),
+            'data': user_dict,
             'message': 'Onboarding completed successfully'
         })
         
