@@ -54,18 +54,17 @@ export default function Onboarding() {
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      // Get backend token from session
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+      if (!session?.user?.id) {
+        alert('Please sign in to complete onboarding')
+        return
       }
       
-      if (session?.backendToken) {
-        headers['Authorization'] = `Bearer ${session.backendToken}`
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/auth/onboarding`, {
+      // Call backend API with user ID from session
+      const response = await fetch(`${API_BASE_URL}/users/${session.user.id}/onboarding`, {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(formData)
       })
 

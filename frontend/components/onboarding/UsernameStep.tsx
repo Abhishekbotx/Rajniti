@@ -23,20 +23,19 @@ export default function UsernameStep({ value, onChange, onValidation }: Username
       setChecking(true)
       setError(null)
       
-      // Get backend token from session
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (session?.backendToken) {
-        headers['Authorization'] = `Bearer ${session.backendToken}`
-      }
-      
       // Call backend API to check username availability
-      const response = await fetch(`${API_BASE_URL}/auth/check-username`, {
+      // Include user_id if available to allow users to keep their own username
+      const body: { username: string; user_id?: string } = { username }
+      if (session?.user?.id) {
+        body.user_id = session.user.id
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/users/check-username`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify({ username })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body)
       })
 
       if (response.ok) {
