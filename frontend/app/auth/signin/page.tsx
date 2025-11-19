@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
+import Link from 'next/link'
 
 function SignInContent() {
   const searchParams = useSearchParams()
@@ -59,12 +60,12 @@ function SignInContent() {
 
         {/* Back to home */}
         <div className="text-center mt-6">
-          <a 
+          <Link 
             href="/"
             className="text-orange-600 hover:text-orange-700 font-medium"
           >
             ← Back to home
-          </a>
+          </Link>
         </div>
       </div>
     </div>

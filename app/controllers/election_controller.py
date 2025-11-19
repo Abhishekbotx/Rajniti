@@ -23,22 +23,11 @@ class ElectionController:
         for election in elections:
             election_data = election.dict()
 
-            # Add basic statistics
-            candidates = self.data_service.get_candidates(election.id)
-            parties = self.data_service.get_parties(election.id)
-            constituencies = self.data_service.get_constituencies(election.id)
+            # Use efficient statistics method instead of fetching all data
+            # This uses COUNT queries instead of loading all records
+            stats = self.data_service.get_election_statistics(election.id)
 
-            # Count winners
-            winners_count = sum(
-                1 for c in candidates if c.get("status") == "WON"
-            )
-
-            election_data["statistics"] = {
-                "total_candidates": len(candidates),
-                "total_parties": len(parties),
-                "total_constituencies": len(constituencies),
-                "total_winners": winners_count,
-            }
+            election_data["statistics"] = stats
 
             result.append(election_data)
 
@@ -52,48 +41,14 @@ class ElectionController:
 
         result = election.dict()
 
-        # Get detailed statistics
-        candidates = self.data_service.get_candidates(election_id)
-        parties = self.data_service.get_parties(election_id)
-        constituencies = self.data_service.get_constituencies(election_id)
-
-        # Count winners and party-wise seats
-        winners_count = 0
-        party_seats = {}
-
-        for candidate in candidates:
-            if candidate.get("status") == "WON":
-                winners_count += 1
-                
-                # Count seats by party
-                party_id = candidate.get("party_id", "UNKNOWN")
-                party_seats[party_id] = party_seats.get(party_id, 0) + 1
-
-        # Get top parties
-        parties_by_id = {p.id: p for p in parties}
-        top_parties = []
-        for party_id, seats in sorted(
-            party_seats.items(), key=lambda x: x[1], reverse=True
-        )[:5]:
-            party = parties_by_id.get(party_id)
-            if party:
-                top_parties.append({
-                    "party_name": party.name,
-                    "party_short_name": party.short_name,
-                    "seats_won": seats,
-                })
-            elif party_id == "UNKNOWN":
-                top_parties.append({
-                    "party_name": "INDEPENDENT",
-                    "party_short_name": "IND",
-                    "seats_won": seats,
-                })
+        # Get basic statistics using efficient COUNT queries
+        stats = self.data_service.get_election_statistics(election_id)
+        
+        # Get top parties using efficient SQL GROUP BY query
+        top_parties = self.data_service.get_party_seat_counts(election_id, limit=5)
 
         result["statistics"] = {
-            "total_candidates": len(candidates),
-            "total_parties": len(parties),
-            "total_constituencies": len(constituencies),
-            "total_winners": winners_count,
+            **stats,
             "top_parties": top_parties,
         }
 

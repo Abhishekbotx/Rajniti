@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useState, useEffect } from "react"
+import { useOnboardingCheck } from "@/hooks/useOnboardingCheck"
 
 // Types for our API data
 interface Election {
@@ -39,6 +40,9 @@ const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
 
 export default function Dashboard() {
+    // Check onboarding status and redirect if not completed
+    const { loading: onboardingLoading } = useOnboardingCheck(true)
+    
     const [selectedElection, setSelectedElection] = useState<Election | null>(
         null
     )
@@ -139,6 +143,20 @@ export default function Dashboard() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
         searchCandidates(searchQuery)
+    }
+
+    // Show loading while checking onboarding status
+    if (onboardingLoading) {
+        return (
+            <div className='min-h-screen bg-gradient-to-b from-orange-50 via-white to-green-50 flex items-center justify-center'>
+                <div className='text-center'>
+                    <div className='inline-block animate-spin rounded-full h-16 w-16 border-4 border-orange-500 border-t-transparent'></div>
+                    <p className='mt-4 text-gray-600 font-semibold'>
+                        Loading...
+                    </p>
+                </div>
+            </div>
+        )
     }
 
     if (loading) {
