@@ -5,8 +5,6 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import PoliticalInclinationStep from '@/components/onboarding/PoliticalInclinationStep'
 import UsernameStep from '@/components/onboarding/UsernameStep'
-import UserDetailsStep from '@/components/onboarding/UserDetailsStep'
-import PreferencesStep from '@/components/onboarding/PreferencesStep'
 
 // API Base URL - configurable via environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
@@ -20,16 +18,10 @@ export default function Onboarding() {
   
   const [formData, setFormData] = useState({
     political_interest: '',
-    username: '',
-    phone: '',
-    state: '',
-    city: '',
-    age_group: '',
-    preferred_parties: [] as string[],
-    topics_of_interest: [] as string[]
+    username: ''
   })
 
-  const updateField = (field: string, value: string | string[]) => {
+  const updateField = (field: string, value: string) => {
     setFormData({
       ...formData,
       [field]: value
@@ -42,10 +34,6 @@ export default function Onboarding() {
         return formData.political_interest !== ''
       case 2:
         return formData.username !== '' && usernameValid
-      case 3:
-        return formData.state !== '' && formData.age_group !== ''
-      case 4:
-        return true // Preferences are optional
       default:
         return false
     }
@@ -59,13 +47,16 @@ export default function Onboarding() {
         return
       }
       
-      // Call backend API with user ID from session
+      // Call backend API with user ID from session - only send political_interest and username
       const response = await fetch(`${API_BASE_URL}/users/${session.user.id}/onboarding`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          political_interest: formData.political_interest,
+          username: formData.username
+        })
       })
 
       if (response.ok) {
@@ -82,7 +73,7 @@ export default function Onboarding() {
     }
   }
 
-  const totalSteps = 4
+  const totalSteps = 2
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-green-50 py-12 px-4">
@@ -94,8 +85,6 @@ export default function Onboarding() {
             <span className="text-sm text-gray-500">
               {step === 1 && 'Political Inclination'}
               {step === 2 && 'Username'}
-              {step === 3 && 'Basic Details'}
-              {step === 4 && 'Preferences'}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -121,30 +110,6 @@ export default function Onboarding() {
               value={formData.username}
               onChange={(value) => updateField('username', value)}
               onValidation={setUsernameValid}
-            />
-          )}
-
-          {/* Step 3: Basic Details */}
-          {step === 3 && (
-            <UserDetailsStep
-              formData={{
-                phone: formData.phone,
-                state: formData.state,
-                city: formData.city,
-                age_group: formData.age_group
-              }}
-              onChange={updateField}
-            />
-          )}
-
-          {/* Step 4: Preferences */}
-          {step === 4 && (
-            <PreferencesStep
-              formData={{
-                preferred_parties: formData.preferred_parties,
-                topics_of_interest: formData.topics_of_interest
-              }}
-              onChange={(field, values) => updateField(field, values)}
             />
           )}
 

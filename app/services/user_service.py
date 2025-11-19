@@ -3,6 +3,7 @@ User service for managing user data operations.
 No authentication logic - only data operations.
 """
 
+from datetime import datetime
 from typing import Optional, Dict, Any
 
 from app.database import get_db_session
@@ -100,27 +101,15 @@ class UserService:
         self,
         user_id: str,
         username: Optional[str] = None,
-        phone: Optional[str] = None,
-        state: Optional[str] = None,
-        city: Optional[str] = None,
-        age_group: Optional[str] = None,
         political_interest: Optional[str] = None,
-        preferred_parties: Optional[list] = None,
-        topics_of_interest: Optional[list] = None,
     ) -> Optional[User]:
         """
-        Complete user onboarding with profile and political preferences.
+        Complete user onboarding with political inclination and username.
         
         Args:
             user_id: User ID
             username: Unique username
-            phone: Phone number
-            state: State of residence
-            city: City of residence
-            age_group: Age group
             political_interest: Level of political interest
-            preferred_parties: List of preferred party names
-            topics_of_interest: List of topics of interest
             
         Returns:
             Updated user object or None if user not found
@@ -130,21 +119,14 @@ class UserService:
             if not user:
                 return None
             
-            # Convert lists to comma-separated strings
-            preferred_parties_str = ",".join(preferred_parties) if preferred_parties else None
-            topics_str = ",".join(topics_of_interest) if topics_of_interest else None
-            
-            user.complete_onboarding(
-                session=session,
-                username=username,
-                phone=phone,
-                state=state,
-                city=city,
-                age_group=age_group,
-                political_interest=political_interest,
-                preferred_parties=preferred_parties_str,
-                topics_of_interest=topics_str
-            )
+            # Update only username and political_interest, mark onboarding as complete
+            if username:
+                user.username = username
+            if political_interest:
+                user.political_interest = political_interest
+            user.onboarding_completed = True
+            user.updated_at = datetime.utcnow()
+            session.flush()
             
             return user
 

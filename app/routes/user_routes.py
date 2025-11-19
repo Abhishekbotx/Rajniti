@@ -102,15 +102,25 @@ def update_profile(user_id):
             "phone": "+91-9876543210",
             "state": "Delhi",
             "city": "New Delhi",
-            "age_group": "26-35"
+            "age_group": "26-35",
+            "preferred_parties": ["Bharatiya Janata Party", "Indian National Congress"],
+            "topics_of_interest": ["Economy", "Healthcare", "Education"]
         }
     """
     try:
         data = request.get_json()
         
-        # Allowed fields for update
-        allowed_fields = ['name', 'phone', 'state', 'city', 'age_group', 'profile_picture']
-        update_data = {k: v for k, v in data.items() if k in allowed_fields}
+        # Handle preferred_parties and topics_of_interest separately (convert lists to strings)
+        update_data = {}
+        for key, value in data.items():
+            if key == 'preferred_parties' or key == 'topics_of_interest':
+                # Convert list to comma-separated string
+                if isinstance(value, list):
+                    update_data[key] = ",".join(value) if value else None
+                else:
+                    update_data[key] = value
+            elif key in ['name', 'phone', 'state', 'city', 'age_group', 'profile_picture']:
+                update_data[key] = value
         
         # Update user
         updated_user = user_service.update_user_profile(user_id, **update_data)
@@ -137,18 +147,12 @@ def update_profile(user_id):
 @user_bp.route("/<user_id>/onboarding", methods=["POST"])
 def complete_onboarding(user_id):
     """
-    Complete user onboarding with basic details and political preferences.
+    Complete user onboarding with political inclination and username.
     
     Request body:
         {
             "username": "johndoe",
-            "phone": "+91-9876543210",
-            "state": "Delhi",
-            "city": "New Delhi",
-            "age_group": "26-35",
-            "political_interest": "Rightist",
-            "preferred_parties": ["Bharatiya Janata Party", "Indian National Congress"],
-            "topics_of_interest": ["Economy", "Healthcare", "Education"]
+            "political_interest": "Rightist"
         }
     """
     try:
@@ -166,17 +170,11 @@ def complete_onboarding(user_id):
                         'error': 'Username is already taken'
                     }), 400
         
-        # Complete onboarding
+        # Complete onboarding - only political_interest and username
         updated_user = user_service.complete_user_onboarding(
             user_id=user_id,
             username=username,
-            phone=data.get('phone'),
-            state=data.get('state'),
-            city=data.get('city'),
-            age_group=data.get('age_group'),
-            political_interest=data.get('political_interest'),
-            preferred_parties=data.get('preferred_parties', []),
-            topics_of_interest=data.get('topics_of_interest', [])
+            political_interest=data.get('political_interest')
         )
         
         if not updated_user:
