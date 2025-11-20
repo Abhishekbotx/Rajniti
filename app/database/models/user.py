@@ -199,6 +199,7 @@ class User(Base):
             "email": self.email,
             "username": self.username,
             "name": self.name,
+            "username": self.username,
             "profile_picture": self.profile_picture,
             "phone": self.phone,
             "state": self.state,
