@@ -252,7 +252,7 @@ export interface PaginatedResponse<T> {
 ```typescript
 // lib/api.ts
 const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
 
 async function fetchAPI<T>(
     endpoint: string,
@@ -383,7 +383,6 @@ export function useSearchCandidates(query: string) {
 
 ```tsx
 import Image from "next/image"
-
 ;<Image
     src='/candidate-photo.jpg'
     alt='Candidate Name'
@@ -643,7 +642,7 @@ describe("CandidateCard", () => {
 
 ```bash
 # .env.local
-NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 NEXT_PUBLIC_SITE_NAME=Rajniti
 ```
 

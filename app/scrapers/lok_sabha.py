@@ -483,32 +483,6 @@ class LokSabhaScraper:
         # Save candidates
         save_json(self.candidates_data, lok_sabha_dir / "candidates.json")
 
-        # Build and save election metadata
-        # Find winning party (party with most seats/wins)
-        winning_party = None
-        winning_party_seats = 0
-
-        # if self.parties_data:
-        #     # Count seats for each party from parties data
-        #     winning_party = self.parties_data[0]["name"]
-        #     # We can't get seat count from current structure, so we'll calculate from candidates
-        #     party_seats = {}
-        #     for candidate in self.candidates_data:
-        #         if candidate.get("status") == "WON":
-        #             party_id = candidate.get("party_id", "")
-        #             party_seats[party_id] = party_seats.get(party_id, 0) + 1
-
-        #     if party_seats:
-        #         winning_party_id = max(party_seats, key=party_seats.get)
-        #         winning_party_seats = party_seats[winning_party_id]
-        #         # Find the party name from party_id
-        #         for party in self.parties_data:
-        #             if party["id"] == winning_party_id:
-        #                 winning_party = party["name"]
-        #                 break
-        party_count = self.count_json_records(self.parties_file)
-        constituency_count = self.count_json_records(self.constituencies_file)
-        candidate_count = self.count_json_records(self.candidates_file)
         self.metadata = {
             "election_id": self.folder_name,
             "name": self.election_name,
@@ -519,8 +493,6 @@ class LokSabhaScraper:
             "total_candidates": len(self.candidates_data),
             "total_parties": len(self.parties_data),
             "result_status": "DECLARED",
-            "winning_party": winning_party,
-            "winning_party_seats": winning_party_seats,
         }
 
         save_json([self.metadata], elections_dir / f"LS-{self.year}.json")

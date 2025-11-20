@@ -11,6 +11,17 @@
 
 A simple, clean REST API serving Indian Election Commission data from JSON files. Built with minimal Flask setup for easy deployment and scraping capabilities. Includes a beautiful, India-themed landing page built with Next.js.
 
+## 🚢 Quick Deployment
+
+| Platform          | Type       | Command                 | Status   |
+| ----------------- | ---------- | ----------------------- | -------- |
+| **Netlify**       | Frontend   | `netlify deploy --prod` | ✅ Ready |
+| **GCP Cloud Run** | Backend    | `gcloud builds submit`  | ✅ Ready |
+| **Docker**        | Full Stack | `docker-compose up -d`  | ✅ Ready |
+| **Vercel**        | Frontend   | `vercel --prod`         | ✅ Ready |
+
+👉 **Jump to**: [Netlify Deployment Guide](#deploy-to-netlify-) • [Backend Deployment](#deployment) • [Docker Setup](#option-1-docker-recommended)
+
 ---
 
 ## 🌟 **Key Features**
@@ -20,6 +31,7 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 | Feature                     | Description                                               |
 | --------------------------- | --------------------------------------------------------- |
 | 🚀 **Simple Flask API**     | Clean RESTful endpoints serving JSON data                 |
+| 💾 **Database Support**     | PostgreSQL/Supabase support with easy migration           |
 | 🌐 **Landing Page**         | Beautiful Next.js landing page with India-themed design   |
 | 📊 **Election Data**        | 50,000+ records across Lok Sabha & Assembly elections     |
 | 🔍 **Search & Filter**      | Basic search and filtering capabilities                   |
@@ -59,8 +71,8 @@ cd rajniti
 # Start with Docker Compose
 docker-compose up -d
 
-# API available at http://localhost:8080
-# Health check: http://localhost:8080/api/v1/health
+# API available at http://localhost:8000
+# Health check: http://localhost:8000/api/v1/health
 ```
 
 ### **Option 2: Local Installation (Automated)**
@@ -99,6 +111,123 @@ python run.py
 
 ---
 
+## 💾 **Database Support**
+
+Rajniti now supports PostgreSQL database storage in addition to JSON files! Perfect for production deployments and works seamlessly with both local PostgreSQL and Supabase.
+
+### **🎯 Features**
+
+-   **Dual Storage**: Use JSON files or PostgreSQL database
+-   **Supabase Ready**: Works out-of-the-box with Supabase
+-   **Local PostgreSQL**: Full support for local development
+-   **CRUD Operations**: Complete Create, Read, Update, Delete operations
+-   **Easy Migration**: Script to migrate existing JSON data to database
+-   **Automatic Migrations**: Idempotent migrations run automatically on server start
+
+### **Quick Database Setup**
+
+#### **Option 1: Local PostgreSQL**
+
+```bash
+# Install PostgreSQL (if not already installed)
+# Ubuntu/Debian
+sudo apt-get install postgresql postgresql-contrib
+
+# macOS (with Homebrew)
+brew install postgresql
+
+# Create database
+createdb rajniti
+
+# Set environment variable
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/rajniti"
+
+# Initialize database (create tables)
+python scripts/db.py init
+
+# Migrate JSON data to database
+python scripts/db.py migrate
+```
+
+#### **Option 2: Supabase (Recommended for Production)**
+
+```bash
+# 1. Create a Supabase project at https://supabase.com
+# 2. Get your database connection string from Project Settings → Database (URI format)
+# 3. Set environment variable
+export DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
+
+# Initialize database (create tables)
+python scripts/db.py init
+
+# Migrate JSON data to database
+python scripts/db.py migrate
+```
+
+### **Database Management Commands**
+
+```bash
+# Sync database with models (auto-generate & run migrations)
+python scripts/db.py sync
+
+# Initialize database (create tables)
+python scripts/db.py init
+
+# Migrate JSON data to database
+python scripts/db.py migrate
+
+# Preview migration without changes
+python scripts/db.py migrate --dry-run
+
+# Reset database (⚠️ deletes all data)
+python scripts/db.py reset
+```
+
+**Note**: Migrations run automatically on server startup. Just update your models and start the server!
+
+### **Database Models**
+
+Three main models with full CRUD operations:
+
+-   **Party**: Political parties (id, name, short_name, symbol)
+-   **Constituency**: Electoral districts (id, name, state_id)
+-   **Candidate**: Election candidates (id, name, party_id, constituency_id, state_id, status, type, image_url)
+
+### **Using Database in Code**
+
+```python
+from app.database import get_db_session
+from app.database.models import Party, Constituency, Candidate
+
+# Create a party
+with get_db_session() as session:
+    party = Party.create(session, "123", "Example Party", "EP", "Lotus")
+
+# Get all parties
+with get_db_session() as session:
+    parties = Party.get_all(session)
+
+# Search candidates
+with get_db_session() as session:
+    candidates = Candidate.search_by_name(session, "Modi")
+```
+
+### **Configuration**
+
+Set the `DATABASE_URL` environment variable to your PostgreSQL connection string:
+
+```bash
+# Local PostgreSQL
+export DATABASE_URL="postgresql://user:password@localhost:5432/rajniti"
+
+# Supabase
+export DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
+```
+
+📚 **Full documentation**: See [app/database/README.md](app/database/README.md) for detailed usage, migrations, and troubleshooting.
+
+---
+
 ## 🌐 **Landing Page**
 
 The Rajniti landing page is a beautiful, India-themed website built with Next.js 16, TypeScript, and Tailwind CSS.
@@ -125,22 +254,100 @@ npm run dev
 # Visit http://localhost:3000
 ```
 
-### **Deploy the Landing Page**
+### **Deploy to Netlify** 🚀
 
-The landing page can be easily deployed to various platforms:
+Deploy the Rajniti frontend to Netlify in just a few minutes!
 
-**Vercel (Recommended):**
+#### **Step 1: Push to Git Repository**
+
+```bash
+# Initialize git (if not already done)
+git init
+git add .
+git commit -m "Initial commit"
+
+# Push to GitHub
+git remote add origin https://github.com/your-username/rajniti.git
+git push -u origin main
+```
+
+#### **Step 2: Deploy via Netlify Dashboard**
+
+1. **Sign up** at [netlify.com](https://app.netlify.com/signup)
+2. Click **"Add new site"** → **"Import an existing project"**
+3. Connect your **GitHub/GitLab/Bitbucket** account
+4. Select your **rajniti repository**
+5. Configure build settings:
+    - **Base directory**: `frontend`
+    - **Build command**: `npm run build`
+    - **Publish directory**: `.next`
+    - **Framework**: Next.js (auto-detected)
+6. Click **"Deploy site"**
+
+#### **Step 3: Add Environment Variables (Optional)**
+
+If you have a backend API, add this environment variable in Netlify:
+
+1. Go to **Site settings** → **Environment variables**
+2. Add variable:
+    - **Key**: `NEXT_PUBLIC_API_URL`
+    - **Value**: `https://your-backend-api.com`
+
+#### **Step 4: Update Backend URL (If applicable)**
+
+If using a separate backend, edit `frontend/netlify.toml`:
+
+```toml
+[[redirects]]
+  from = "/api/*"
+  to = "https://your-backend-url.run.app/api/:splat"
+  status = 200
+  force = false
+```
+
+#### **Deploy via Netlify CLI**
+
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Login
+netlify login
+
+# Navigate to frontend
+cd frontend
+
+# Deploy (follow prompts)
+netlify deploy --prod
+```
+
+#### **Continuous Deployment**
+
+Once connected to GitHub, Netlify automatically deploys when you push to `main`:
+
+```bash
+git add .
+git commit -m "Update frontend"
+git push origin main
+# ✅ Netlify automatically rebuilds and deploys!
+```
+
+#### **Custom Domain (Optional)**
+
+1. Go to **Domain settings** in Netlify Dashboard
+2. Click **"Add custom domain"**
+3. Follow DNS configuration instructions
+
+---
+
+### **Alternative Deployment Options**
+
+**Vercel (Alternative to Netlify):**
 
 ```bash
 cd frontend
-vercel
+npx vercel --prod
 ```
-
-**Netlify:**
-
--   Set base directory to `frontend`
--   Build command: `npm run build`
--   Framework: Next.js (auto-detected)
 
 **GCP Cloud Run:**
 
@@ -148,7 +355,13 @@ vercel
 gcloud run deploy rajniti-frontend --source ./frontend
 ```
 
-For detailed deployment instructions, see [frontend/README.md](frontend/README.md)
+**Docker (Self-hosted):**
+
+```bash
+cd frontend
+docker build -t rajniti-frontend .
+docker run -p 3000:3000 rajniti-frontend
+```
 
 ---
 
@@ -428,7 +641,6 @@ Each scraper produces 4 JSON files:
     "total_candidates": 3802,
     "total_parties": 211,
     "result_status": "DECLARED",
-    "winning_party": "Bharatiya Janata Party",
     "winning_party_seats": 240
 }
 ```
@@ -447,7 +659,6 @@ Each scraper produces 4 JSON files:
     "total_candidates": 6914,
     "total_parties": 3,
     "result_status": "DECLARED",
-    "winning_party": "Bharatiya Janata Party",
     "winning_party_seats": 48,
     "runner_up_party": "Aam Aadmi Party",
     "runner_up_seats": 22
@@ -489,8 +700,8 @@ chmod +x scripts/scrape_all.py
 
 ### **🎯 Simple API Documentation**
 
--   **API Base URL**: `http://localhost:8080/api/v1/`
--   **Health Check**: `http://localhost:8080/api/v1/health`
+-   **API Base URL**: `http://localhost:8000/api/v1/`
+-   **Health Check**: `http://localhost:8000/api/v1/health`
 
 ### **🔥 Core Endpoints**
 
@@ -537,29 +748,29 @@ GET /api/v1/parties/{name}/performance            # Party performance
 
 ```bash
 # Get all elections
-curl "http://localhost:8080/api/v1/elections"
+curl "http://localhost:8000/api/v1/elections"
 
 # Search for candidates named "Modi"
-curl "http://localhost:8080/api/v1/candidates/search?q=modi"
+curl "http://localhost:8000/api/v1/candidates/search?q=modi"
 
 # Get Lok Sabha 2024 winners
-curl "http://localhost:8080/api/v1/elections/lok-sabha-2024/winners"
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/winners"
 
 # Get all parties
-curl "http://localhost:8080/api/v1/parties"
+curl "http://localhost:8000/api/v1/parties"
 ```
 
 ### **Filtering Examples**
 
 ```bash
 # Get candidates by party
-curl "http://localhost:8080/api/v1/candidates/party/Bharatiya%20Janata%20Party"
+curl "http://localhost:8000/api/v1/candidates/party/Bharatiya%20Janata%20Party"
 
 # Get constituency candidates
-curl "http://localhost:8080/api/v1/elections/delhi-assembly-2025/constituencies/DL-1/candidates"
+curl "http://localhost:8000/api/v1/elections/delhi-assembly-2025/constituencies/DL-1/candidates"
 
 # Get party performance
-curl "http://localhost:8080/api/v1/parties/Bharatiya%20Janata%20Party/performance"
+curl "http://localhost:8000/api/v1/parties/Bharatiya%20Janata%20Party/performance"
 ```
 
 ### **Python Integration**
@@ -568,7 +779,7 @@ curl "http://localhost:8080/api/v1/parties/Bharatiya%20Janata%20Party/performanc
 import requests
 
 # Simple API client
-BASE_URL = "http://localhost:8080/api/v1"
+BASE_URL = "http://localhost:8000/api/v1"
 
 # Search for candidates
 response = requests.get(f"{BASE_URL}/candidates/search", params={"q": "modi"})
@@ -621,7 +832,282 @@ rajniti/
 # Application (minimal configuration)
 SECRET_KEY=your-secret-key              # Flask secret key
 FLASK_ENV=production                    # Environment (development/production)
+
+# Database (optional)
+DATABASE_URL=postgresql://user:password@localhost:5432/rajniti  # PostgreSQL connection
+# Perplexity AI API (for search functionality)
+PERPLEXITY_API_KEY=your-perplexity-api-key-here
 ```
+
+#### Common Errors
+
+1. **"Perplexity API key not provided"**
+
+    - Solution: Set `PERPLEXITY_API_KEY` environment variable or add to `.env` file
+
+2. **"Module not found: perplexityai"**
+
+    - Solution: Run `pip install -r requirements.txt`
+
+3. **Rate limit exceeded**
+    - Solution: Wait a moment and retry, or upgrade your Perplexity API plan
+
+### **📚 Resources**
+
+-   [Perplexity API Documentation](https://docs.perplexity.ai/)
+-   [API Quickstart Guide](https://docs.perplexity.ai/guides/perplexity-sdk)
+-   [Search API Guide](https://docs.perplexity.ai/guides/search-guide)
+-   [Location Filter Guide](https://docs.perplexity.ai/guides/user-location-filter-guide)
+
+---
+
+## 🗄️ **Database**
+
+Rajniti now includes PostgreSQL support for future data storage needs.
+
+### **Setup with Docker**
+
+```bash
+# Start both API and PostgreSQL
+docker-compose up -d
+
+# PostgreSQL will be available at:
+# - Host: localhost
+# - Port: 5432
+# - Database: rajniti
+# - User: rajniti
+# - Password: rajniti_dev_password
+```
+
+### **Local Development**
+
+```bash
+# Install PostgreSQL locally or use Docker
+docker run -d \
+  --name rajniti-postgres \
+  -e POSTGRES_USER=rajniti \
+  -e POSTGRES_PASSWORD=rajniti_dev_password \
+  -e POSTGRES_DB=rajniti \
+  -p 5432:5432 \
+  postgres:16-alpine
+
+# Set DATABASE_URL in your environment
+export DATABASE_URL="postgresql://rajniti:rajniti_dev_password@localhost:5432/rajniti"
+
+# Start the app
+python run.py
+```
+
+### **Database Health Check**
+
+Check database connectivity via the health endpoint:
+
+```bash
+curl http://localhost:8000/api/v1/health
+```
+
+Response with database connected:
+
+```json
+{
+    "success": true,
+    "message": "Rajniti API is healthy",
+    "version": "1.0.0",
+    "database": {
+        "connected": true,
+        "status": "healthy"
+    }
+}
+```
+
+**Note:** The application works perfectly fine without a database configured. Database support is optional and ready for future schema implementation.
+
+## 🔍 **Perplexity AI Search Integration**
+
+Rajniti integrates with Perplexity AI API to provide powerful, India-focused search capabilities for political information, election data, and news.
+
+### **🚀 Quick Setup**
+
+1. **Get Your API Key**
+
+    - Sign up at [Perplexity AI](https://www.perplexity.ai/)
+    - Navigate to API settings and generate your API key
+    - Free tier available for testing
+
+2. **Configure Environment**
+
+    ```bash
+    # Copy example env file
+    cp .env.example .env
+
+    # Edit .env and add your API key
+    PERPLEXITY_API_KEY=your-actual-api-key-here
+    ```
+
+3. **Install Dependencies**
+    ```bash
+    # Install/update requirements
+    pip install -r requirements.txt
+    ```
+
+### **✨ Features**
+
+-   🇮🇳 **India-Focused**: Automatically filters search results for Indian context
+-   🎯 **Region-Specific**: Support for state/city-level searches (e.g., Delhi, Maharashtra)
+-   🔍 **Real-time Search**: Access latest political news and election information
+-   🌐 **Web Search**: Leverages Perplexity's AI-powered web search
+-   📚 **Citations**: Returns sources for all information
+-   ⚡ **Fast & Reliable**: Built-in error handling and retries
+
+### **💻 Usage Examples**
+
+#### **Basic Python Usage**
+
+```python
+from app.services.perplexity_service import PerplexityService
+
+# Initialize service (reads PERPLEXITY_API_KEY from environment)
+service = PerplexityService()
+
+# Simple search with India filter
+results = service.search("Latest election results in India 2025")
+print(results['answer'])
+print(results['citations'])
+
+# Region-specific search
+results = service.search_india(
+    query="political news today",
+    region="Delhi",
+    city="New Delhi"
+)
+
+# Multiple queries at once
+queries = [
+    "Lok Sabha election 2024 results",
+    "Delhi Assembly election 2025 results"
+]
+results = service.search_multiple_queries(queries)
+```
+
+#### **Test the Integration**
+
+Run the included test script to verify your setup:
+
+```bash
+# Set your API key
+export PERPLEXITY_API_KEY='your-api-key-here'
+
+# Run test script
+python scripts/test_perplexity.py
+```
+
+Expected output:
+
+```
+🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
+Perplexity API Integration Test
+🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
+
+🔍 Testing Basic India Search...
+✅ Perplexity service initialized successfully
+📝 Query: Latest election results in India 2025
+✅ Search completed successfully!
+```
+
+### **⚙️ Advanced Configuration**
+
+#### **Custom Location Filters**
+
+```python
+# Specific location with coordinates
+location = {
+    "country": "IN",
+    "region": "Maharashtra",
+    "city": "Mumbai",
+    "latitude": 19.0760,
+    "longitude": 72.8777
+}
+results = service.search("local political events", location=location)
+```
+
+#### **Multiple Regions**
+
+```python
+# Search across different regions
+regions = ["Delhi", "Maharashtra", "Karnataka"]
+for region in regions:
+    results = service.search_india(
+        "election updates",
+        region=region
+    )
+    print(f"{region}: {results['answer'][:200]}...")
+```
+
+### **🔌 API Models**
+
+Perplexity supports different models:
+
+-   **sonar**: Standard model, optimized for search (default, recommended)
+-   **sonar-pro**: Advanced model with higher accuracy (requires pro plan)
+
+### **📝 Response Format**
+
+```python
+{
+    "query": "Your search query",
+    "answer": "AI-generated answer based on search results",
+    "citations": ["https://source1.com", "https://source2.com", ...],
+    "model": "sonar",
+    "location": {"country": "IN"}
+}
+```
+
+### **🔐 Security Notes**
+
+-   **Never commit** your API key to git
+-   Use `.env` files for local development
+-   Use environment variables for production deployment
+-   The `.env.example` file shows the format but doesn't contain real keys
+
+### **💡 Use Cases**
+
+-   **Election Research**: Search for latest election results and analysis
+-   **Political News**: Get India-focused political news and updates
+-   **Candidate Information**: Research candidates across different elections
+-   **Party Performance**: Analyze party performance in different regions
+-   **Policy Updates**: Track government policy changes and announcements
+
+### **🐛 Troubleshooting**
+
+#### API Key Issues
+
+```bash
+# Check if API key is set
+echo $PERPLEXITY_API_KEY
+
+# Verify .env file exists and has correct format
+cat .env | grep PERPLEXITY_API_KEY
+```
+
+#### Common Errors
+
+1. **"Perplexity API key not provided"**
+
+    - Solution: Set `PERPLEXITY_API_KEY` environment variable or add to `.env` file
+
+2. **"Module not found: perplexityai"**
+
+    - Solution: Run `pip install -r requirements.txt`
+
+3. **Rate limit exceeded**
+    - Solution: Wait a moment and retry, or upgrade your Perplexity API plan
+
+### **📚 Resources**
+
+-   [Perplexity API Documentation](https://docs.perplexity.ai/)
+-   [API Quickstart Guide](https://docs.perplexity.ai/guides/perplexity-sdk)
+-   [Search API Guide](https://docs.perplexity.ai/guides/search-guide)
+-   [Location Filter Guide](https://docs.perplexity.ai/guides/user-location-filter-guide)
 
 ---
 
@@ -633,20 +1119,32 @@ FLASK_ENV=production                    # Environment (development/production)
 # docker-compose.yml
 version: "3.8"
 services:
+    postgres:
+        image: postgres:16-alpine
+        environment:
+            - POSTGRES_USER=rajniti
+            - POSTGRES_PASSWORD=rajniti_dev_password
+            - POSTGRES_DB=rajniti
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
     rajniti-api:
         build: .
         ports:
-            - "8080:8080"
+            - "8000:8000"
         environment:
             - FLASK_ENV=production
             - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_URL=postgresql://rajniti:rajniti_dev_password@postgres:5432/rajniti
         volumes:
             - ./app/data:/app/app/data:ro
+        depends_on:
+            - postgres
 
-    redis:
-        image: redis:7-alpine
-        ports:
-            - "6379:6379"
+volumes:
+    postgres_data:
 ```
 
 ```bash

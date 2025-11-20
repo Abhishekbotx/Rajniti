@@ -300,6 +300,18 @@ def api_root():
 @api_bp.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint"""
+    from app.core.database import check_db_health
+
+    db_status = check_db_health()
+
     return jsonify(
-        {"success": True, "message": "Rajniti API is healthy", "version": "1.0.0"}
+        {
+            "success": True,
+            "message": "Rajniti API is healthy",
+            "version": "1.0.0",
+            "database": {
+                "connected": db_status,
+                "status": "healthy" if db_status else "not configured or unavailable",
+            },
+        }
     )

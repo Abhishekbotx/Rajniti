@@ -1,4 +1,5 @@
 import PreambleSection from '@/components/PreambleSection'
+import UserButton from '@/components/auth/UserButton'
 
 export default function Home() {
     return (
@@ -13,7 +14,7 @@ export default function Home() {
                                 Rajniti
                             </span>
                         </div>
-                        <nav className='hidden md:flex gap-6'>
+                        <nav className='hidden md:flex gap-6 items-center'>
                             <a
                                 href='/dashboard'
                                 className='text-gray-600 hover:text-orange-600 transition-colors font-semibold'>
@@ -41,6 +42,7 @@ export default function Home() {
                                 className='text-gray-600 hover:text-orange-600 transition-colors'>
                                 API
                             </a>
+                            <UserButton />
                         </nav>
                     </div>
                 </div>
