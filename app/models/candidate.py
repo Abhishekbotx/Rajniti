@@ -28,3 +28,5 @@ class Candidate(BaseModel):
     image_url: Optional[str] = None
     status: CandidateStatus
     type: CandidateType = CandidateType.MP
+    votes: Optional[int] = None
+    margin: Optional[int] = None
