@@ -22,7 +22,8 @@ user_service = UserService()
 @user_bp.route("/sync", methods=["POST"])
 def sync_user():
     """
-    Sync user from NextAuth to backend database.
+    Get or Create User.
+    Syncs user from NextAuth to backend database.
     Called by NextAuth after successful Google OAuth.
     
     Request body:
@@ -57,7 +58,7 @@ def sync_user():
         
         return jsonify({
             'success': True,
-            'data': user.to_dict()
+            'data': user
         })
         
     except Exception as e:
@@ -81,7 +82,7 @@ def get_user(user_id):
         
         return jsonify({
             'success': True,
-            'data': user.to_dict()
+            'data': user
         })
         
     except Exception as e:
@@ -91,36 +92,49 @@ def get_user(user_id):
         }), 500
 
 
-@user_bp.route("/<user_id>", methods=["PUT"])
-def update_profile(user_id):
+@user_bp.route("/<user_id>", methods=["PATCH", "PUT"])
+def update_user(user_id):
     """
     Update user profile.
+    Handles both general profile updates and onboarding completion.
     
-    Request body:
-        {
-            "name": "John Doe",
-            "phone": "+91-9876543210",
-            "state": "Delhi",
-            "city": "New Delhi",
-            "age_group": "26-35",
-            "preferred_parties": ["Bharatiya Janata Party", "Indian National Congress"],
-            "topics_of_interest": ["Economy", "Healthcare", "Education"]
-        }
+    Request body can include:
+        - username (checked for uniqueness)
+        - political_interest
+        - onboarding_completed (boolean)
+        - name, phone, state, city, age_group
+        - preferred_parties, topics_of_interest
     """
     try:
         data = request.get_json()
         
-        # Handle preferred_parties and topics_of_interest separately (convert lists to strings)
+        # Validate username if provided
+        username = data.get('username')
+        if username:
+            # Check if username is already taken by another user
+            is_available = user_service.check_username_available(username, exclude_user_id=user_id)
+            if not is_available:
+                return jsonify({
+                    'success': False,
+                    'error': 'Username is already taken'
+                }), 400
+
+        # Prepare update data
         update_data = {}
+        allowed_fields = [
+            'name', 'phone', 'state', 'city', 'age_group', 'profile_picture',
+            'username', 'political_interest', 'onboarding_completed'
+        ]
+        
         for key, value in data.items():
-            if key == 'preferred_parties' or key == 'topics_of_interest':
-                # Convert list to comma-separated string
+            if key in allowed_fields:
+                update_data[key] = value
+            elif key == 'preferred_parties' or key == 'topics_of_interest':
+                # Convert list to comma-separated string if needed
                 if isinstance(value, list):
                     update_data[key] = ",".join(value) if value else None
                 else:
                     update_data[key] = value
-            elif key in ['name', 'phone', 'state', 'city', 'age_group', 'profile_picture']:
-                update_data[key] = value
         
         # Update user
         updated_user = user_service.update_user_profile(user_id, **update_data)
@@ -133,66 +147,14 @@ def update_profile(user_id):
         
         return jsonify({
             'success': True,
-            'data': updated_user.to_dict(),
-            'message': 'Profile updated successfully'
+            'data': updated_user,
+            'message': 'User updated successfully'
         })
         
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': f'Failed to update profile: {str(e)}'
-        }), 500
-
-
-@user_bp.route("/<user_id>/onboarding", methods=["POST"])
-def complete_onboarding(user_id):
-    """
-    Complete user onboarding with political inclination and username.
-    
-    Request body:
-        {
-            "username": "johndoe",
-            "political_interest": "Rightist"
-        }
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate username if provided
-        username = data.get('username')
-        if username:
-            # Check if username is already taken by another user
-            with get_db_session() as session:
-                existing_user = User.get_by_username(session, username)
-                if existing_user and existing_user.id != user_id:
-                    return jsonify({
-                        'success': False,
-                        'error': 'Username is already taken'
-                    }), 400
-        
-        # Complete onboarding - only political_interest and username
-        user_dict = user_service.complete_user_onboarding(
-            user_id=user_id,
-            username=username,
-            political_interest=data.get('political_interest')
-        )
-        
-        if not user_dict:
-            return jsonify({
-                'success': False,
-                'error': 'User not found'
-            }), 404
-        
-        return jsonify({
-            'success': True,
-            'data': user_dict,
-            'message': 'Onboarding completed successfully'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Failed to complete onboarding: {str(e)}'
+            'error': f'Failed to update user: {str(e)}'
         }), 500
 
 
@@ -243,4 +205,3 @@ def user_health():
         'service': 'User Service',
         'message': 'User service is operational'
     })
-

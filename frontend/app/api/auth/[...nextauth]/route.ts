@@ -1,67 +1,72 @@
-import NextAuth from "next-auth"
+import NextAuth, { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
+import { userService } from "@/lib/api/user"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
-
-const handler = NextAuth({
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
-  ],
-  callbacks: {
-    async signIn({ user, account, profile }) {
-      // Sync user with backend when they sign in
-      try {
-        if (!account || !profile) return true
-        
-        // Call backend to create/update user (no token needed)
-        const response = await fetch(`${API_BASE_URL}/users/sync`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: profile.sub,
-            email: user.email,
-            name: user.name,
-            profile_picture: user.image,
-          })
+const authOptions: NextAuthOptions = {
+    providers: [
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID || "",
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET || ""
         })
-        
-        if (!response.ok) {
-          console.error('Failed to sync user with backend')
+    ],
+    callbacks: {
+        async jwt({ token, account, profile, trigger, session }) {
+            // Initial sign in
+            if (account && profile) {
+                token.accessToken = account.access_token
+                token.userId = profile.sub
+
+                // Sync user with backend when they sign in
+                try {
+                    const profileData = profile as {
+                        picture?: string
+                        image?: string
+                    }
+                    // Use the userService helper
+                    const data = await userService.syncUser({
+                        id: profile.sub,
+                        email: profile.email,
+                        name: profile.name,
+                        profile_picture:
+                            profileData.picture || profileData.image
+                    })
+
+                    // Store onboarding status in token
+                    token.onboardingCompleted =
+                        data.data?.onboarding_completed || false
+                } catch (error) {
+                    console.error("Error syncing user with backend:", error)
+                }
+            }
+
+            // Handle session update trigger from client
+            if (
+                trigger === "update" &&
+                session?.onboardingCompleted !== undefined
+            ) {
+                token.onboardingCompleted = session.onboardingCompleted
+            }
+
+            return token
+        },
+        async session({ session, token }) {
+            // Send properties to the client
+            if (session.user) {
+                session.user.id = token.userId as string
+                session.user.onboardingCompleted =
+                    token.onboardingCompleted as boolean
+                session.accessToken = token.accessToken as string
+            }
+            return session
         }
-        
-        return true
-      } catch (error) {
-        console.error('Error syncing user with backend:', error)
-        return true // Allow login even if backend sync fails
-      }
     },
-    async jwt({ token, account, profile, user }) {
-      // Persist the OAuth access_token and user info to the token
-      if (account) {
-        token.accessToken = account.access_token
-        token.userId = profile?.sub
-      }
-      return token
+    pages: {
+        signIn: "/auth/signin",
+        newUser: "/onboarding"
     },
-    async session({ session, token }) {
-      // Send properties to the client
-      if (session.user) {
-        session.user.id = token.userId as string
-        session.accessToken = token.accessToken as string
-      }
-      return session
-    },
-  },
-  pages: {
-    signIn: '/auth/signin',
-    newUser: '/onboarding'
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-})
+    secret: process.env.NEXTAUTH_SECRET
+}
+
+const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }

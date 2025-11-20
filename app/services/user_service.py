@@ -13,7 +13,7 @@ from app.database.models import User
 class UserService:
     """Service for handling user data operations."""
 
-    def get_or_create_user(self, user_info: Dict[str, Any]) -> User:
+    def get_or_create_user(self, user_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         Get existing user or create a new one from user info.
         
@@ -25,7 +25,7 @@ class UserService:
                 - profile_picture: URL to profile picture
             
         Returns:
-            User object
+            User dictionary
         """
         with get_db_session() as session:
             user_id = user_info.get('id') or user_info.get('sub')  # Support both formats
@@ -59,9 +59,9 @@ class UserService:
             # Update last login
             user.update_last_login(session)
             
-            return user
+            return user.to_dict()
 
-    def get_user_by_id(self, user_id: str) -> Optional[User]:
+    def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
         """
         Get user by ID.
         
@@ -69,47 +69,23 @@ class UserService:
             user_id: User ID
             
         Returns:
-            User object or None if not found
+            User dictionary or None if not found
         """
         with get_db_session() as session:
-            return User.get_by_id(session, user_id)
+            user = User.get_by_id(session, user_id)
+            return user.to_dict() if user else None
 
     def update_user_profile(
         self,
         user_id: str,
         **kwargs
-    ) -> Optional[User]:
+    ) -> Optional[Dict[str, Any]]:
         """
         Update user profile information.
         
         Args:
             user_id: User ID
             **kwargs: Fields to update
-            
-        Returns:
-            Updated user object or None if user not found
-        """
-        with get_db_session() as session:
-            user = User.get_by_id(session, user_id)
-            if not user:
-                return None
-            
-            user.update(session, **kwargs)
-            return user
-
-    def complete_user_onboarding(
-        self,
-        user_id: str,
-        username: Optional[str] = None,
-        political_interest: Optional[str] = None,
-    ) -> Optional[dict]:
-        """
-        Complete user onboarding with political inclination and username.
-        
-        Args:
-            user_id: User ID
-            username: Unique username
-            political_interest: Level of political interest
             
         Returns:
             Updated user dictionary or None if user not found
@@ -119,16 +95,12 @@ class UserService:
             if not user:
                 return None
             
-            # Update only username and political_interest, mark onboarding as complete
-            if username:
-                user.username = username
-            if political_interest:
-                user.political_interest = political_interest
-            user.onboarding_completed = True
-            user.updated_at = datetime.utcnow()
-            session.commit()
+            # Handle username update specially (uniqueness check should be done by controller/route)
+            # But we can double check here if needed or trust the controller.
+            # For simplicity, we assume controller checked availability.
             
-            # Convert to dict while session is still open to avoid detached instance error
+            # Update fields
+            user.update(session, **kwargs)
             return user.to_dict()
 
     def check_username_available(self, username: str, exclude_user_id: Optional[str] = None) -> bool:
@@ -150,4 +122,3 @@ class UserService:
             if exclude_user_id and user.id == exclude_user_id:
                 return True
             return False
-

@@ -2,15 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { userService } from '@/lib/api/user'
 
 interface UsernameStepProps {
   value: string
   onChange: (value: string) => void
   onValidation: (isValid: boolean) => void
 }
-
-// API Base URL - configurable via environment variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
 
 export default function UsernameStep({ value, onChange, onValidation }: UsernameStepProps) {
   const { data: session } = useSession()
@@ -24,28 +22,10 @@ export default function UsernameStep({ value, onChange, onValidation }: Username
       setError(null)
       
       // Call backend API to check username availability
-      // Include user_id if available to allow users to keep their own username
-      const body: { username: string; user_id?: string } = { username }
-      if (session?.user?.id) {
-        body.user_id = session.user.id
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/users/check-username`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body)
-      })
+      const data = await userService.checkUsername(username, session?.user?.id)
 
-      if (response.ok) {
-        const data = await response.json()
-        setAvailable(data.available)
-        onValidation(data.available)
-      } else {
-        setError('Failed to check username availability')
-        onValidation(false)
-      }
+      setAvailable(data.available)
+      onValidation(data.available)
     } catch (err) {
       console.error('Error checking username:', err)
       setError('Failed to check username availability')

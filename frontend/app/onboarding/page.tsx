@@ -5,13 +5,11 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import PoliticalInclinationStep from '@/components/onboarding/PoliticalInclinationStep'
 import UsernameStep from '@/components/onboarding/UsernameStep'
-
-// API Base URL - configurable via environment variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+import { userService } from '@/lib/api/user'
 
 export default function Onboarding() {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, update } = useSession()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [usernameValid, setUsernameValid] = useState(false)
@@ -47,27 +45,19 @@ export default function Onboarding() {
         return
       }
       
-      // Call backend API with user ID from session - only send political_interest and username
-      const response = await fetch(`${API_BASE_URL}/users/${session.user.id}/onboarding`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          political_interest: formData.political_interest,
-          username: formData.username
-        })
+      // Call backend API using the generic update endpoint
+      await userService.updateUser(session.user.id, {
+        political_interest: formData.political_interest,
+        username: formData.username,
+        onboarding_completed: true
       })
 
-      if (response.ok) {
-        router.push('/dashboard')
-      } else {
-        const error = await response.json()
-        alert(error.error || 'Failed to complete onboarding')
-      }
+      // Update NextAuth session to reflect onboarding completion
+      await update({ onboardingCompleted: true })
+      router.push('/dashboard')
     } catch (error) {
       console.error('Onboarding failed:', error)
-      alert('Failed to complete onboarding. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to complete onboarding. Please try again.')
     } finally {
       setLoading(false)
     }
