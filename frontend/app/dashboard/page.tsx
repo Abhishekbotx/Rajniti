@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck"
+import UserButton from "@/components/auth/UserButton"
 
 // Types for our API data
 interface Election {
@@ -205,11 +206,14 @@ export default function Dashboard() {
                                 Rajniti Dashboard
                             </span>
                         </div>
-                        <Link
-                            href='/'
-                            className='text-gray-600 hover:text-orange-600 transition-colors font-semibold'>
-                            ← Home
-                        </Link>
+                        <div className='flex items-center gap-4'>
+                            <Link
+                                href='/'
+                                className='text-gray-600 hover:text-orange-600 transition-colors font-semibold'>
+                                Home
+                            </Link>
+                            <UserButton />
+                        </div>
                     </div>
                 </div>
             </header>

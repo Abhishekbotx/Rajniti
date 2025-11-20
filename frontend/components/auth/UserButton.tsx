@@ -47,7 +47,7 @@ export default function UserButton() {
                     </div>
 
                     <a
-                        href='/profile/edit'
+                        href='/dashboard'
                         className='block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 transition-colors'>
                         Dashboard
                     </a>
@@ -59,7 +59,7 @@ export default function UserButton() {
                     </a>
 
                     <button
-                        onClick={() => signOut()}
+                        onClick={() => signOut({ callbackUrl: "/" })}
                         className='w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors'>
                         Sign Out
                     </button>
