@@ -1,9 +1,12 @@
 "use client"
 
-import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck"
 import UserButton from "@/components/auth/UserButton"
+import Button from "@/components/ui/Button"
+import Text from "@/components/ui/Text"
+import Link from "@/components/ui/Link"
+import Image from "@/components/ui/Image"
 
 // Types for our API data
 interface Election {
@@ -179,16 +182,17 @@ export default function Dashboard() {
                 <div className='bg-white rounded-lg shadow-lg p-8 max-w-md w-full border-l-4 border-red-500'>
                     <div className='flex items-center gap-3 mb-4'>
                         <div className='text-red-500 text-3xl'>⚠️</div>
-                        <h2 className='text-xl font-bold text-gray-900'>
+                        <Text variant="h4" weight="bold" className='text-gray-900'>
                             Connection Error
-                        </h2>
+                        </Text>
                     </div>
-                    <p className='text-gray-600 mb-4'>{error}</p>
-                    <button
+                    <Text variant="body" className='text-gray-600 mb-4'>{error}</Text>
+                    <Button
                         onClick={fetchElections}
-                        className='w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors'>
+                        fullWidth
+                    >
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             </div>
         )
@@ -202,14 +206,15 @@ export default function Dashboard() {
                     <div className='flex h-16 items-center justify-between'>
                         <div className='flex items-center gap-2'>
                             <div className='text-2xl font-bold'>🗳️</div>
-                            <span className='text-xl font-bold text-gray-900'>
+                            <Text variant="h4" weight="bold" className='text-gray-900'>
                                 Rajniti Dashboard
-                            </span>
+                            </Text>
                         </div>
                         <div className='flex items-center gap-4'>
                             <Link
                                 href='/'
-                                className='text-gray-600 hover:text-orange-600 transition-colors font-semibold'>
+                                variant="nav"
+                            >
                                 Home
                             </Link>
                             <UserButton />
@@ -223,55 +228,55 @@ export default function Dashboard() {
                 {selectedElection && (
                     <div className='mb-8'>
                         <div className='bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-8 text-white shadow-lg'>
-                            <h1 className='text-3xl font-bold mb-2'>
+                            <Text variant="h2" weight="bold" className='text-white mb-2'>
                                 {selectedElection.name}
-                            </h1>
-                            <p className='text-orange-100 mb-6'>
+                            </Text>
+                            <Text variant="body" className='text-orange-100 mb-6'>
                                 Year: {selectedElection.year} | Type:{" "}
                                 {selectedElection.type}
-                            </p>
+                            </Text>
 
                             <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
                                 <div className='bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20'>
-                                    <div className='text-3xl font-bold'>
+                                    <Text variant="h3" weight="bold" className='text-white'>
                                         {
                                             selectedElection.statistics
                                                 .total_constituencies
                                         }
-                                    </div>
-                                    <div className='text-orange-100 text-sm mt-1'>
+                                    </Text>
+                                    <Text variant="small" className='text-orange-100 mt-1'>
                                         Constituencies
-                                    </div>
+                                    </Text>
                                 </div>
                                 <div className='bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20'>
-                                    <div className='text-3xl font-bold'>
+                                    <Text variant="h3" weight="bold" className='text-white'>
                                         {selectedElection.statistics.total_candidates.toLocaleString()}
-                                    </div>
-                                    <div className='text-orange-100 text-sm mt-1'>
+                                    </Text>
+                                    <Text variant="small" className='text-orange-100 mt-1'>
                                         Candidates
-                                    </div>
+                                    </Text>
                                 </div>
                                 <div className='bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20'>
-                                    <div className='text-3xl font-bold'>
+                                    <Text variant="h3" weight="bold" className='text-white'>
                                         {
                                             selectedElection.statistics
                                                 .total_parties
                                         }
-                                    </div>
-                                    <div className='text-orange-100 text-sm mt-1'>
+                                    </Text>
+                                    <Text variant="small" className='text-orange-100 mt-1'>
                                         Parties
-                                    </div>
+                                    </Text>
                                 </div>
                                 <div className='bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20'>
-                                    <div className='text-3xl font-bold'>
+                                    <Text variant="h3" weight="bold" className='text-white'>
                                         {
                                             selectedElection.statistics
                                                 .total_winners
                                         }
-                                    </div>
-                                    <div className='text-orange-100 text-sm mt-1'>
+                                    </Text>
+                                    <Text variant="small" className='text-orange-100 mt-1'>
                                         Winners
-                                    </div>
+                                    </Text>
                                 </div>
                             </div>
                         </div>
@@ -281,9 +286,9 @@ export default function Dashboard() {
                 {/* Search Section */}
                 <div className='mb-8'>
                     <div className='bg-white rounded-2xl shadow-lg p-6 border border-gray-200'>
-                        <h2 className='text-2xl font-bold text-gray-900 mb-4'>
+                        <Text variant="h3" weight="bold" className='text-gray-900 mb-4'>
                             🔍 Search Candidates
-                        </h2>
+                        </Text>
                         <form onSubmit={handleSearch} className='flex gap-2'>
                             <input
                                 type='text'
@@ -292,20 +297,23 @@ export default function Dashboard() {
                                 placeholder='Search by candidate name...'
                                 className='flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent'
                             />
-                            <button
+                            <Button
                                 type='submit'
                                 disabled={searchLoading}
-                                className='bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+                                isLoading={searchLoading}
+                                size="lg"
+                                className="px-8"
+                            >
                                 {searchLoading ? "Searching..." : "Search"}
-                            </button>
+                            </Button>
                         </form>
 
                         {/* Search Results */}
                         {candidates.length > 0 && (
                             <div className='mt-6 space-y-3'>
-                                <h3 className='font-semibold text-gray-700'>
+                                <Text variant="body" weight="semibold" className='text-gray-700'>
                                     Results ({candidates.length})
-                                </h3>
+                                </Text>
                                 <div className='grid gap-3'>
                                     {candidates.map((candidate) => (
                                         <div
@@ -313,37 +321,31 @@ export default function Dashboard() {
                                             className='bg-gradient-to-r from-gray-50 to-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors'>
                                             <div className='flex items-center gap-4'>
                                                 {candidate.image_url && (
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img
-                                                        src={
-                                                            candidate.image_url
-                                                        }
+                                                    <Image
+                                                        src={candidate.image_url}
                                                         alt={candidate.name}
-                                                        className='w-16 h-16 rounded-full object-cover border-2 border-orange-200'
-                                                        onError={(e) => {
-                                                            ;(
-                                                                e.target as HTMLImageElement
-                                                            ).style.display =
-                                                                "none"
-                                                        }}
+                                                        width={64}
+                                                        height={64}
+                                                        rounded="full"
+                                                        className='w-16 h-16 object-cover border-2 border-orange-200'
                                                     />
                                                 )}
                                                 <div className='flex-1'>
-                                                    <h4 className='font-bold text-gray-900'>
+                                                    <Text variant="body" weight="bold" className='text-gray-900'>
                                                         {candidate.name}
-                                                    </h4>
-                                                    <p className='text-sm text-gray-600'>
+                                                    </Text>
+                                                    <Text variant="small" className='text-gray-600'>
                                                         {candidate.party_name} (
                                                         {
                                                             candidate.party_short_name
                                                         }
                                                         )
-                                                    </p>
-                                                    <p className='text-sm text-gray-500'>
+                                                    </Text>
+                                                    <Text variant="small" className='text-gray-500'>
                                                         {
                                                             candidate.constituency_name
                                                         }
-                                                    </p>
+                                                    </Text>
                                                 </div>
                                                 <div>
                                                     <span
@@ -378,9 +380,9 @@ export default function Dashboard() {
                 {parties.length > 0 && (
                     <div className='mb-8'>
                         <div className='bg-white rounded-2xl shadow-lg p-6 border border-gray-200'>
-                            <h2 className='text-2xl font-bold text-gray-900 mb-4'>
+                            <Text variant="h3" weight="bold" className='text-gray-900 mb-4'>
                                 🎯 Major Parties
-                            </h2>
+                            </Text>
                             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                                 {parties.map((party, index) => (
                                     <div
@@ -393,14 +395,14 @@ export default function Dashboard() {
                                                 )}
                                             </div>
                                             <div className='flex-1'>
-                                                <h4 className='font-bold text-gray-900 text-sm'>
+                                                <Text variant="body" weight="bold" className='text-gray-900 text-sm'>
                                                     {party.party_name}
-                                                </h4>
-                                                <p className='text-xs text-gray-600'>
+                                                </Text>
+                                                <Text variant="caption" className='text-gray-600'>
                                                     {party.party_short_name}
                                                     {party.total_seats &&
                                                         ` • ${party.total_seats} seats`}
-                                                </p>
+                                                </Text>
                                             </div>
                                         </div>
                                     </div>
@@ -414,9 +416,9 @@ export default function Dashboard() {
                 <div className='text-center py-8'>
                     <div className='inline-flex items-center gap-2 bg-white rounded-full px-6 py-3 shadow-md border border-gray-200'>
                         <div className='w-2 h-2 rounded-full bg-green-500 animate-pulse'></div>
-                        <span className='text-sm text-gray-600'>
+                        <Text variant="small" className='text-gray-600'>
                             Data powered by Rajniti Election API
-                        </span>
+                        </Text>
                     </div>
                 </div>
             </div>
