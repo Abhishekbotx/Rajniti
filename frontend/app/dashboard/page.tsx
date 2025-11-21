@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck"
-import UserButton from "@/components/auth/UserButton"
+import { Navbar } from "@/components/layout"
 import Button from "@/components/ui/Button"
 import Text from "@/components/ui/Text"
-import Link from "@/components/ui/Link"
 import Image from "@/components/ui/Image"
 
 // Types for our API data
@@ -200,28 +199,7 @@ export default function Dashboard() {
 
     return (
         <div className='min-h-screen bg-gradient-to-b from-orange-50 via-white to-green-50'>
-            {/* Header */}
-            <header className='border-b border-orange-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10'>
-                <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
-                    <div className='flex h-16 items-center justify-between'>
-                        <div className='flex items-center gap-2'>
-                            <div className='text-2xl font-bold'>🗳️</div>
-                            <Text variant="h4" weight="bold" className='text-gray-900'>
-                                Rajniti Dashboard
-                            </Text>
-                        </div>
-                        <div className='flex items-center gap-4'>
-                            <Link
-                                href='/'
-                                variant="nav"
-                            >
-                                Home
-                            </Link>
-                            <UserButton />
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Navbar variant="dashboard" sticky={true} />
 
             <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8'>
                 {/* Election Overview Section */}

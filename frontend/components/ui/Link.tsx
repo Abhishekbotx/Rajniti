@@ -5,7 +5,13 @@ interface CustomLinkProps extends LinkProps {
     children: React.ReactNode
     className?: string
     external?: boolean
-    variant?: "default" | "nav" | "button" | "underline"
+    variant?:
+        | "default"
+        | "nav"
+        | "button"
+        | "underline"
+        | "primary"
+        | "secondary"
     target?: string
     rel?: string
 }
@@ -18,10 +24,13 @@ export default function CustomLink({
     ...props
 }: CustomLinkProps) {
     const variants = {
-        default: "text-orange-600 hover:text-orange-700 transition-colors",
-        nav: "text-gray-600 hover:text-orange-600 transition-colors font-semibold",
+        default: "text-primary-600 hover:text-primary-700 transition-colors",
+        primary: "text-primary-600 hover:text-primary-700 transition-colors",
+        secondary: "text-gray-600 hover:text-gray-900 transition-colors",
+        nav: "text-gray-600 hover:text-primary-600 transition-colors font-semibold",
         button: "", // Usually used with Button component inside or styling passed via className
-        underline: "text-orange-600 hover:text-orange-700 hover:underline transition-all"
+        underline:
+            "text-primary-600 hover:text-primary-700 hover:underline transition-all"
     }
 
     if (external) {
@@ -29,21 +38,16 @@ export default function CustomLink({
             <a
                 href={props.href.toString()}
                 className={`${variants[variant]} ${className}`}
-                target="_blank"
-                rel="noopener noreferrer"
-            >
+                target='_blank'
+                rel='noopener noreferrer'>
                 {children}
             </a>
         )
     }
 
     return (
-        <Link
-            {...props}
-            className={`${variants[variant]} ${className}`}
-        >
+        <Link {...props} className={`${variants[variant]} ${className}`}>
             {children}
         </Link>
     )
 }
-

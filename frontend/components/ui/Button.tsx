@@ -44,12 +44,12 @@ export default function Button(props: ButtonProps) {
 
     const variants = {
         primary:
-            "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-md hover:shadow-lg focus:ring-orange-500",
+            "bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-md hover:shadow-lg focus:ring-primary-500",
         secondary:
-            "bg-white text-gray-700 border-2 border-gray-300 hover:border-orange-500 hover:text-orange-600 shadow-sm focus:ring-orange-500",
+            "bg-white text-secondary-700 border-2 border-secondary-300 hover:border-primary-500 hover:text-primary-600 shadow-sm focus:ring-primary-500",
         outline:
-            "border-2 border-orange-500 text-orange-600 hover:bg-orange-50 focus:ring-orange-500",
-        ghost: "text-gray-600 hover:text-orange-600 hover:bg-orange-50 focus:ring-orange-500",
+            "border-2 border-primary-500 text-primary-600 hover:bg-primary-50 focus:ring-primary-500",
+        ghost: "text-secondary-600 hover:text-primary-600 hover:bg-primary-50 focus:ring-primary-500",
         danger: "text-red-600 hover:bg-red-50 focus:ring-red-500"
     }
 
