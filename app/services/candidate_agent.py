@@ -11,6 +11,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
+from pydantic import ValidationError
 
 from app.database.models import Candidate
 from app.schemas.candidate_data import (
@@ -36,15 +37,16 @@ class CandidateDataAgent:
     3. Updates the database with the fetched information
     """
 
-    def __init__(self, perplexity_api_key: Optional[str] = None):
+    def __init__(self, search_service: Optional[Any] = None, perplexity_api_key: Optional[str] = None):
         """
         Initialize the candidate data agent.
 
         Args:
-            perplexity_api_key: Optional Perplexity API key. If not provided,
-                              will be read from environment variable.
+            search_service: Optional search service instance. If not provided,
+                          PerplexityService will be used.
+            perplexity_api_key: Optional Perplexity API key.
         """
-        self.perplexity = PerplexityService(api_key=perplexity_api_key)
+        self.search_service = search_service or PerplexityService(api_key=perplexity_api_key)
         logger.info("CandidateDataAgent initialized successfully")
 
     def find_candidates_needing_data(
@@ -97,12 +99,14 @@ class CandidateDataAgent:
         if candidate.constituency_id:
             base_info += f" from constituency {candidate.constituency_id}"
 
-        source_instruction = "Please use https://www.myneta.info/ as the primary source for this information."
+        # We use MyNeta as a reference but do not include source text in the final stored data.
+        source_instruction = "Search for this information using reliable sources like MyNeta.info."
         
         common_instruction = (
             f"{source_instruction} "
             "If the information is not available, return an empty list []. "
-            "Return ONLY the JSON object, no other text."
+            "Return ONLY the JSON object, no other text. "
+            "Do not include any source citations, links, or 'According to...' phrases in the values."
         )
 
         queries = {
@@ -193,7 +197,7 @@ class CandidateDataAgent:
         logger.info(f"Fetching education background for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "education")
-            result = self.perplexity.search_india(query)
+            result = self.search_service.search_india(query)
             
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
@@ -202,9 +206,16 @@ class CandidateDataAgent:
             data = self._extract_json_from_response(result.get("answer", ""))
             if isinstance(data, list):
                 # Validate with Pydantic
-                validated_data = [EducationDetails(**item).dict() for item in data]
-                logger.info(f"✅ Education data found for {candidate.name}")
-                return validated_data
+                validated_data = []
+                for item in data:
+                    try:
+                        validated_data.append(EducationDetails(**item).dict())
+                    except ValidationError as ve:
+                        logger.warning(f"Skipping invalid education data for {candidate.name}: {ve}")
+                
+                if validated_data:
+                    logger.info(f"✅ Education data found for {candidate.name} ({len(validated_data)} records)")
+                    return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching education background: {e}")
@@ -217,7 +228,7 @@ class CandidateDataAgent:
         logger.info(f"Fetching political background for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "political")
-            result = self.perplexity.search_india(query)
+            result = self.search_service.search_india(query)
             
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
@@ -225,9 +236,16 @@ class CandidateDataAgent:
 
             data = self._extract_json_from_response(result.get("answer", ""))
             if isinstance(data, list):
-                validated_data = [PoliticalHistory(**item).dict() for item in data]
-                logger.info(f"✅ Political history found for {candidate.name}")
-                return validated_data
+                validated_data = []
+                for item in data:
+                    try:
+                        validated_data.append(PoliticalHistory(**item).dict())
+                    except ValidationError as ve:
+                         logger.warning(f"Skipping invalid political data for {candidate.name}: {ve}")
+
+                if validated_data:
+                    logger.info(f"✅ Political history found for {candidate.name} ({len(validated_data)} records)")
+                    return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching political background: {e}")
@@ -240,7 +258,7 @@ class CandidateDataAgent:
         logger.info(f"Fetching family background for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "family")
-            result = self.perplexity.search_india(query)
+            result = self.search_service.search_india(query)
             
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
@@ -248,9 +266,16 @@ class CandidateDataAgent:
 
             data = self._extract_json_from_response(result.get("answer", ""))
             if isinstance(data, list):
-                validated_data = [FamilyMember(**item).dict() for item in data]
-                logger.info(f"✅ Family data found for {candidate.name}")
-                return validated_data
+                validated_data = []
+                for item in data:
+                    try:
+                        validated_data.append(FamilyMember(**item).dict())
+                    except ValidationError as ve:
+                        logger.warning(f"Skipping invalid family data for {candidate.name}: {ve}")
+
+                if validated_data:
+                    logger.info(f"✅ Family data found for {candidate.name} ({len(validated_data)} records)")
+                    return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching family background: {e}")
@@ -263,7 +288,7 @@ class CandidateDataAgent:
         logger.info(f"Fetching assets information for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "assets")
-            result = self.perplexity.search_india(query)
+            result = self.search_service.search_india(query)
             
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
@@ -271,9 +296,16 @@ class CandidateDataAgent:
 
             data = self._extract_json_from_response(result.get("answer", ""))
             if isinstance(data, list):
-                validated_data = [AssetDetails(**item).dict() for item in data]
-                logger.info(f"✅ Assets information found for {candidate.name}")
-                return validated_data
+                validated_data = []
+                for item in data:
+                    try:
+                        validated_data.append(AssetDetails(**item).dict())
+                    except ValidationError as ve:
+                         logger.warning(f"Skipping invalid asset data for {candidate.name}: {ve}")
+
+                if validated_data:
+                    logger.info(f"✅ Assets information found for {candidate.name} ({len(validated_data)} records)")
+                    return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching assets: {e}")
@@ -286,7 +318,7 @@ class CandidateDataAgent:
         logger.info(f"Fetching liabilities information for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "liabilities")
-            result = self.perplexity.search_india(query)
+            result = self.search_service.search_india(query)
             
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
@@ -294,9 +326,16 @@ class CandidateDataAgent:
 
             data = self._extract_json_from_response(result.get("answer", ""))
             if isinstance(data, list):
-                validated_data = [LiabilityDetails(**item).dict() for item in data]
-                logger.info(f"✅ Liabilities information found for {candidate.name}")
-                return validated_data
+                validated_data = []
+                for item in data:
+                    try:
+                        validated_data.append(LiabilityDetails(**item).dict())
+                    except ValidationError as ve:
+                         logger.warning(f"Skipping invalid liability data for {candidate.name}: {ve}")
+
+                if validated_data:
+                    logger.info(f"✅ Liabilities information found for {candidate.name} ({len(validated_data)} records)")
+                    return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching liabilities: {e}")
@@ -309,7 +348,7 @@ class CandidateDataAgent:
         logger.info(f"Fetching crime cases for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "crime_cases")
-            result = self.perplexity.search_india(query)
+            result = self.search_service.search_india(query)
             
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
@@ -317,9 +356,16 @@ class CandidateDataAgent:
 
             data = self._extract_json_from_response(result.get("answer", ""))
             if isinstance(data, list):
-                validated_data = [CrimeCaseDetails(**item).dict() for item in data]
-                logger.info(f"✅ Crime cases found for {candidate.name}")
-                return validated_data
+                validated_data = []
+                for item in data:
+                    try:
+                        validated_data.append(CrimeCaseDetails(**item).dict())
+                    except ValidationError as ve:
+                         logger.warning(f"Skipping invalid crime case data for {candidate.name}: {ve}")
+
+                if validated_data:
+                    logger.info(f"✅ Crime cases found for {candidate.name} ({len(validated_data)} records)")
+                    return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching crime cases: {e}")
@@ -361,6 +407,7 @@ class CandidateDataAgent:
         def fetch_and_update(field_name, fetch_method, status_key):
             if getattr(candidate, field_name) is None:
                 data = fetch_method(candidate)
+                # Strict validation: reject empty lists if not explicit
                 if data is not None:
                     update_data[field_name] = data
                     status[status_key] = True
