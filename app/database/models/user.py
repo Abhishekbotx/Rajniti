@@ -5,7 +5,7 @@ User database model with authentication and onboarding support.
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Session
 
 from ..base import Base
@@ -23,23 +23,22 @@ class User(Base):
     # Primary identification
     id = Column(String, primary_key=True, index=True)  # Google user ID
     email = Column(String, unique=True, nullable=False, index=True)
-    username = Column(String, unique=True, nullable=True, index=True)
-    
-    # Basic profile information
     name = Column(String, nullable=True)
     username = Column(String, unique=True, nullable=True, index=True)
     profile_picture = Column(String, nullable=True)
     
     # Onboarding information
-    phone = Column(String, nullable=True)
     state = Column(String, nullable=True)
     city = Column(String, nullable=True)
-    age_group = Column(String, nullable=True)  # e.g., "18-25", "26-35", etc.
+    pincode = Column(String, nullable=True) 
+    age_group = Column(String, nullable=True)
+
+    # Constituency information
+    vs_constituency_id = Column(String, ForeignKey("constituencies.id"), nullable=True)
+    ls_constituency_id = Column(String, ForeignKey("constituencies.id"), nullable=True)
     
     # Political preferences
-    political_interest = Column(String, nullable=True)  # e.g., "Rightist", "Leftist", "Communist", "Centrist", "Libertarian", "Neutral"
-    preferred_parties = Column(Text, nullable=True)  # Comma-separated party names
-    topics_of_interest = Column(Text, nullable=True)  # Comma-separated topics
+    political_ideology = Column(String, nullable=True)  # e.g., "Rightist", "Leftist", "Communist", "Centrist", "Libertarian", "Neutral"
     
     # Onboarding status
     onboarding_completed = Column(Boolean, default=False, nullable=False)
@@ -47,7 +46,6 @@ class User(Base):
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    last_login = Column(DateTime, nullable=True)
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, name={self.name})>"

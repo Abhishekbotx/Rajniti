@@ -28,36 +28,48 @@ export default function Navbar({
                         </Text>
                     </div>
 
-                    {isDashboard ? (
-                        <div className='flex items-center gap-4'>
-                            <Link href='/' variant='nav'>
-                                Home
-                            </Link>
-                            <UserButton />
-                        </div>
-                    ) : (
-                        <nav className='hidden md:flex gap-6 items-center'>
-                            <Link href='/dashboard' variant='nav'>
-                                Dashboard
-                            </Link>
-                            <Link href='#about' variant='nav'>
-                                About
-                            </Link>
-                            <Link href='#contribute' variant='nav'>
-                                Contribute
-                            </Link>
-                            <Link
-                                href='https://chat.whatsapp.com/IceA98FSHHuDmXOwv8WH7v'
-                                external
-                                variant='nav'>
-                                Join Community
-                            </Link>
-                            <Link href='#api' variant='nav'>
-                                API
-                            </Link>
-                            <UserButton />
-                        </nav>
-                    )}
+                    <div className='flex flex-row gap-4'>
+                        {isDashboard ? (
+                            <>
+                                <div className='flex items-center gap-4'>
+                                    <Link href='/' variant='nav'>
+                                        Home
+                                    </Link>
+                                </div>
+                                <div className='flex items-center gap-4'>
+                                    <Link
+                                        href='https://github.com/imsks/rajniti/issues/new'
+                                        variant='nav'
+                                        target='_blank'>
+                                        Found a Bug?
+                                    </Link>
+                                </div>
+                            </>
+                        ) : (
+                            <nav className='hidden md:flex gap-6 items-center'>
+                                <Link href='/dashboard' variant='nav'>
+                                    Dashboard
+                                </Link>
+                                <Link href='#about' variant='nav'>
+                                    About
+                                </Link>
+                                <Link href='#contribute' variant='nav'>
+                                    Contribute
+                                </Link>
+                                <Link
+                                    href='https://chat.whatsapp.com/IceA98FSHHuDmXOwv8WH7v'
+                                    external
+                                    variant='nav'>
+                                    Join Community
+                                </Link>
+                                <Link href='#api' variant='nav'>
+                                    API
+                                </Link>
+                            </nav>
+                        )}
+
+                        <UserButton />
+                    </div>
                 </div>
             </div>
         </header>

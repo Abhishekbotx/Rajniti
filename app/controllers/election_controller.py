@@ -21,11 +21,11 @@ class ElectionController:
         result = []
 
         for election in elections:
-            election_data = election.dict()
+            election_data = election.copy()
 
             # Use efficient statistics method instead of fetching all data
             # This uses COUNT queries instead of loading all records
-            stats = self.data_service.get_election_statistics(election.id)
+            stats = self.data_service.get_election_statistics(election["id"])
 
             election_data["statistics"] = stats
 
@@ -39,7 +39,7 @@ class ElectionController:
         if not election:
             return None
 
-        result = election.dict()
+        result = election.copy()
 
         # Get basic statistics using efficient COUNT queries
         stats = self.data_service.get_election_statistics(election_id)
