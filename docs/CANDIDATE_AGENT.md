@@ -5,6 +5,7 @@ An automated agent system that populates detailed candidate information using Pe
 ## Overview
 
 The Candidate Data Population Agent is a background service that automatically:
+
 1. Finds candidates with missing detailed information in the database
 2. Uses Perplexity AI to fetch structured data about each candidate
 3. Updates the database with the fetched information
@@ -12,12 +13,12 @@ The Candidate Data Population Agent is a background service that automatically:
 
 ## Features
 
-- **Automatic Discovery**: Finds candidates missing education, political, family, or asset information
-- **Structured Data Extraction**: Uses Perplexity AI with JSON-formatted prompts for consistent data
-- **Incremental Updates**: Processes candidates in batches to manage API usage
-- **Error Handling**: Gracefully handles API failures and missing data
-- **Progress Tracking**: Detailed logging of all operations
-- **Rate Limiting**: Built-in delays to respect API rate limits
+-   **Automatic Discovery**: Finds candidates missing education, political, family, or asset information
+-   **Structured Data Extraction**: Uses Perplexity AI with JSON-formatted prompts for consistent data
+-   **Incremental Updates**: Processes candidates in batches to manage API usage
+-   **Error Handling**: Gracefully handles API failures and missing data
+-   **Progress Tracking**: Detailed logging of all operations
+-   **Rate Limiting**: Built-in delays to respect API rate limits
 
 ## Architecture
 
@@ -26,18 +27,20 @@ The agent consists of two main components:
 ### 1. CandidateDataAgent (`app/services/candidate_agent.py`)
 
 The core agent class that handles:
-- Finding candidates needing data
-- Creating Perplexity queries for each data field
-- Extracting JSON from Perplexity responses
-- Updating the database
+
+-   Finding candidates needing data
+-   Creating Perplexity queries for each data field
+-   Extracting JSON from Perplexity responses
+-   Updating the database
 
 ### 2. CLI Script (`scripts/run_candidate_agent.py`)
 
 Command-line interface for running the agent with:
-- Configurable batch sizes
-- Adjustable delays
-- Dry-run mode for testing
-- Environment validation
+
+-   Configurable batch sizes
+-   Adjustable delays
+-   Dry-run mode for testing
+-   Environment validation
 
 ## Prerequisites
 
@@ -114,24 +117,26 @@ python scripts/run_candidate_agent.py --help
 ```
 
 Options:
-- `--batch-size`: Number of candidates to process (default: 10)
-- `--delay-between-candidates`: Seconds between processing candidates (default: 2.0)
-- `--delay-between-requests`: Seconds between API requests for same candidate (default: 2.0)
-- `--dry-run`: Run without making changes
+
+-   `--batch-size`: Number of candidates to process (default: 10)
+-   `--delay-between-candidates`: Seconds between processing candidates (default: 2.0)
+-   `--delay-between-requests`: Seconds between API requests for same candidate (default: 2.0)
+-   `--dry-run`: Run without making changes
 
 ## How It Works
 
 ### 1. Find Candidates
 
 The agent queries the database for candidates where any of these fields are `NULL`:
-- `education_background`
-- `political_background`
-- `family_background`
-- `assets`
+
+-   `education_background`
+-   `family_background`
+-   `assets`
 
 ### 2. Fetch Data
 
 For each candidate, the agent:
+
 1. Creates a structured query asking Perplexity for data in JSON format
 2. Calls Perplexity AI's search API
 3. Extracts the JSON data from the response
@@ -140,6 +145,7 @@ For each candidate, the agent:
 ### 3. Update Database
 
 The agent:
+
 1. Only updates fields that were successfully fetched
 2. Skips fields that already have data (won't overwrite)
 3. Commits all updates for a candidate at once
@@ -167,9 +173,9 @@ The agent populates four types of data:
 
 ```json
 {
-  "graduation_year": 2000,
-  "stream": "Political Science",
-  "college_or_school": "Delhi University"
+    "graduation_year": 2000,
+    "stream": "Political Science",
+    "college_or_school": "Delhi University"
 }
 ```
 
@@ -177,15 +183,15 @@ The agent populates four types of data:
 
 ```json
 {
-  "elections": [
-    {
-      "election_year": 2019,
-      "election_type": "MP",
-      "constituency": "Delhi-1",
-      "party": "Party Name",
-      "status": "WON"
-    }
-  ]
+    "elections": [
+        {
+            "election_year": 2019,
+            "election_type": "MP",
+            "constituency": "Delhi-1",
+            "party": "Party Name",
+            "status": "WON"
+        }
+    ]
 }
 ```
 
@@ -193,24 +199,24 @@ The agent populates four types of data:
 
 ```json
 {
-  "father": {
-    "name": "Father Name",
-    "profession": "Businessman"
-  },
-  "mother": {
-    "name": "Mother Name",
-    "profession": "Teacher"
-  },
-  "spouse": {
-    "name": "Spouse Name",
-    "profession": "Doctor"
-  },
-  "children": [
-    {
-      "name": "Child Name",
-      "profession": "Engineer"
-    }
-  ]
+    "father": {
+        "name": "Father Name",
+        "profession": "Businessman"
+    },
+    "mother": {
+        "name": "Mother Name",
+        "profession": "Teacher"
+    },
+    "spouse": {
+        "name": "Spouse Name",
+        "profession": "Doctor"
+    },
+    "children": [
+        {
+            "name": "Child Name",
+            "profession": "Engineer"
+        }
+    ]
 }
 ```
 
@@ -218,14 +224,14 @@ The agent populates four types of data:
 
 ```json
 {
-  "commercial_assets": "2 shops, 1 hotel",
-  "cash_assets": "Rs. 50 lakhs in bank",
-  "bank_details": [
-    {
-      "bank_name": "State Bank of India",
-      "branch": "Delhi Main"
-    }
-  ]
+    "commercial_assets": "2 shops, 1 hotel",
+    "cash_assets": "Rs. 50 lakhs in bank",
+    "bank_details": [
+        {
+            "bank_name": "State Bank of India",
+            "branch": "Delhi Main"
+        }
+    ]
 }
 ```
 
@@ -248,7 +254,7 @@ with get_db_session() as session:
         delay_between_candidates=2.0,
         delay_between_requests=2.0
     )
-    
+
     print(f"Processed: {stats['total_processed']}")
     print(f"Successful: {stats['successful']}")
 ```
@@ -273,26 +279,33 @@ The agent provides detailed logging:
 The agent handles various error scenarios:
 
 ### API Errors
+
 If Perplexity API fails, the agent:
-- Logs the error
-- Continues with next candidate
-- Does not update the database for failed candidates
+
+-   Logs the error
+-   Continues with next candidate
+-   Does not update the database for failed candidates
 
 ### Data Extraction Failures
+
 If JSON extraction fails:
-- Logs a warning
-- Marks field as not populated
-- Continues with other fields
+
+-   Logs a warning
+-   Marks field as not populated
+-   Continues with other fields
 
 ### Database Errors
+
 If database update fails:
-- Rolls back the transaction
-- Logs the error
-- Continues with next candidate
+
+-   Rolls back the transaction
+-   Logs the error
+-   Continues with next candidate
 
 ## Best Practices
 
 ### 1. Start Small
+
 Begin with small batch sizes to test:
 
 ```bash
@@ -300,6 +313,7 @@ python scripts/run_candidate_agent.py --batch-size 5
 ```
 
 ### 2. Monitor API Usage
+
 Perplexity API has rate limits. Use appropriate delays:
 
 ```bash
@@ -311,12 +325,15 @@ python scripts/run_candidate_agent.py \
 ```
 
 ### 3. Run During Off-Peak Hours
+
 For large batches, run during off-peak hours to avoid impacting other services.
 
 ### 4. Check Logs Regularly
+
 Monitor the logs to ensure data quality and identify any issues.
 
 ### 5. Verify Data Quality
+
 Periodically check the database to ensure the fetched data is accurate.
 
 ## Troubleshooting
@@ -355,12 +372,13 @@ This is normal - not all queries will return perfect JSON. The agent logs warnin
 
 Approximate processing times:
 
-- **Per Candidate**: 8-12 seconds (4 API calls with 2s delays)
-- **Batch of 10**: 2-3 minutes
-- **Batch of 100**: 20-30 minutes
-- **All 8,902 candidates**: ~20-30 hours (with delays)
+-   **Per Candidate**: 8-12 seconds (4 API calls with 2s delays)
+-   **Batch of 10**: 2-3 minutes
+-   **Batch of 100**: 20-30 minutes
+-   **All 8,902 candidates**: ~20-30 hours (with delays)
 
 To process all candidates faster, you can:
+
 1. Run multiple instances in parallel (different batches)
 2. Reduce delays (carefully, to avoid rate limits)
 3. Increase batch size
@@ -401,6 +419,7 @@ When modifying the agent:
 ## Support
 
 For issues or questions:
+
 1. Check the logs for error details
 2. Review the troubleshooting section
 3. Open an issue on GitHub

@@ -44,7 +44,6 @@ class Candidate(Base):
     # New detailed information fields (JSON/JSONB for flexibility)
     # Using JSON for SQLite compatibility and JSONB for PostgreSQL performance
     education_background = Column(JSON, nullable=True)
-    political_background = Column(JSON, nullable=True)
     family_background = Column(JSON, nullable=True)
     assets = Column(JSON, nullable=True)
 
@@ -67,7 +66,6 @@ class Candidate(Base):
         image_url: Optional[str] = None,
         original_constituency_id: Optional[str] = None,
         education_background: Optional[Dict[str, Any]] = None,
-        political_background: Optional[Dict[str, Any]] = None,
         family_background: Optional[Dict[str, Any]] = None,
         assets: Optional[Dict[str, Any]] = None,
     ) -> "Candidate":
@@ -86,7 +84,6 @@ class Candidate(Base):
             image_url: URL to candidate image (optional)
             original_constituency_id: Original constituency ID for backward compatibility
             education_background: Education background data (optional)
-            political_background: Political background data (optional)
             family_background: Family background data (optional)
             assets: Assets data (optional)
 
@@ -96,8 +93,6 @@ class Candidate(Base):
         logger.info(f"Creating candidate: {name} (ID: {id})")
         if education_background:
             logger.debug(f"Education background provided for {name}")
-        if political_background:
-            logger.debug(f"Political background provided for {name}")
         if family_background:
             logger.debug(f"Family background provided for {name}")
         if assets:
@@ -114,7 +109,6 @@ class Candidate(Base):
             type=type,
             image_url=image_url,
             education_background=education_background,
-            political_background=political_background,
             family_background=family_background,
             assets=assets,
         )
@@ -277,7 +271,6 @@ class Candidate(Base):
                 type=c.get("type", "MP"),
                 image_url=c.get("image_url"),
                 education_background=c.get("education_background"),
-                political_background=c.get("political_background"),
                 family_background=c.get("family_background"),
                 assets=c.get("assets"),
             )
@@ -325,7 +318,6 @@ class Candidate(Base):
                     "type": c.get("type", "MP"),
                     "image_url": c.get("image_url"),
                     "education_background": c.get("education_background"),
-                    "political_background": c.get("political_background"),
                     "family_background": c.get("family_background"),
                     "assets": c.get("assets"),
                 }
@@ -345,7 +337,6 @@ class Candidate(Base):
                 "type": stmt.excluded.type,
                 "image_url": stmt.excluded.image_url,
                 "education_background": stmt.excluded.education_background,
-                "political_background": stmt.excluded.political_background,
                 "family_background": stmt.excluded.family_background,
                 "assets": stmt.excluded.assets,
             },

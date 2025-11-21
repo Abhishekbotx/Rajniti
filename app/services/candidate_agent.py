@@ -57,12 +57,11 @@ class CandidateDataAgent:
         # Query candidates where at least one detailed field is null
         candidates = (
             session.query(Candidate)
-            .filter(
-                (Candidate.education_background.is_(None))
-                | (Candidate.political_background.is_(None))
-                | (Candidate.family_background.is_(None))
-                | (Candidate.assets.is_(None))
-            )
+            # .filter(
+            #     (Candidate.education_background.is_(None))
+            #     | (Candidate.family_background.is_(None))
+            #     | (Candidate.assets.is_(None))
+            # )
             .limit(limit)
             .all()
         )
@@ -304,7 +303,6 @@ class CandidateDataAgent:
 
         status = {
             "education": False,
-            "political": False,
             "family": False,
             "assets": False,
         }
@@ -321,17 +319,6 @@ class CandidateDataAgent:
         else:
             logger.info(f"⏭️  Education data already exists for {candidate.name}")
             status["education"] = True
-
-        # Fetch political background if missing
-        if candidate.political_background is None:
-            political = self.fetch_political_background(candidate)
-            if political:
-                update_data["political_background"] = political
-                status["political"] = True
-            time.sleep(delay_between_requests)
-        else:
-            logger.info(f"⏭️  Political data already exists for {candidate.name}")
-            status["political"] = True
 
         # Fetch family background if missing
         if candidate.family_background is None:

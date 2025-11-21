@@ -33,7 +33,6 @@ def mock_candidate():
     candidate.name = "Test Candidate"
     candidate.constituency_id = "DL-1"
     candidate.education_background = None
-    candidate.political_background = None
     candidate.family_background = None
     candidate.assets = None
     candidate.update = Mock()
