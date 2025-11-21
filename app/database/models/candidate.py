@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import Column
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
 
@@ -286,3 +287,71 @@ class Candidate(Base):
         session.flush()
         logger.info(f"Successfully bulk created {len(candidate_objects)} candidates")
         return candidate_objects
+
+    @classmethod
+    def bulk_upsert(cls, session: Session, candidates: List[dict]) -> int:
+        """
+        Upsert multiple candidates at once (insert if not exists, update if exists).
+
+        Uses PostgreSQL's ON CONFLICT DO UPDATE for efficient upsert operations.
+        If a candidate with the same primary key exists, it will be updated with new values.
+
+        Args:
+            session: Database session
+            candidates: List of candidate dictionaries
+
+        Returns:
+            Number of records processed (inserted or updated)
+        """
+        if not candidates:
+            return 0
+
+        logger.info(f"Bulk upserting {len(candidates)} candidates")
+
+        # Prepare data for bulk insert
+        values = []
+        for c in candidates:
+            values.append(
+                {
+                    "id": c["id"],
+                    "name": c["name"],
+                    "party_id": c["party_id"],
+                    "constituency_id": c.get(
+                        "constituency_unique_id", c.get("constituency_id")
+                    ),
+                    "original_constituency_id": c.get("constituency_id"),
+                    "state_id": c["state_id"],
+                    "status": c["status"],
+                    "type": c.get("type", "MP"),
+                    "image_url": c.get("image_url"),
+                    "education_background": c.get("education_background"),
+                    "political_background": c.get("political_background"),
+                    "family_background": c.get("family_background"),
+                    "assets": c.get("assets"),
+                }
+            )
+
+        # Use PostgreSQL's ON CONFLICT DO UPDATE
+        stmt = pg_insert(cls.__table__).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["id"],
+            set_={
+                "name": stmt.excluded.name,
+                "party_id": stmt.excluded.party_id,
+                "constituency_id": stmt.excluded.constituency_id,
+                "original_constituency_id": stmt.excluded.original_constituency_id,
+                "state_id": stmt.excluded.state_id,
+                "status": stmt.excluded.status,
+                "type": stmt.excluded.type,
+                "image_url": stmt.excluded.image_url,
+                "education_background": stmt.excluded.education_background,
+                "political_background": stmt.excluded.political_background,
+                "family_background": stmt.excluded.family_background,
+                "assets": stmt.excluded.assets,
+            },
+        )
+
+        session.execute(stmt)
+        session.flush()
+        logger.info(f"Successfully bulk upserted {len(candidates)} candidates")
+        return len(candidates)

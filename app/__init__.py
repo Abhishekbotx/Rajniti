@@ -6,8 +6,11 @@ Clean, minimal setup without unnecessary complexity.
 import logging
 import os
 
+from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
+
+load_dotenv()
 
 from app.core.database import init_db
 from app.core.exceptions import RajnitiError
@@ -49,8 +52,10 @@ def create_app():
 def _register_routes(app: Flask) -> None:
     """Register API routes"""
     from app.routes.api_routes import api_bp
+    from app.routes.user_routes import user_bp
 
     app.register_blueprint(api_bp)
+    app.register_blueprint(user_bp)
 
 
 def _register_error_handlers(app: Flask) -> None:

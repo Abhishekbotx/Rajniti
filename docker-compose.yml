@@ -25,7 +25,7 @@ services:
         build: .
         container_name: rajniti-api
         ports:
-            - "8080:8080"
+            - "8000:8000"
         environment:
             - SECRET_KEY=dev-secret-key
             - DATABASE_URL=ppostgresql://postgres:postgres@localhost:5432/rajniti

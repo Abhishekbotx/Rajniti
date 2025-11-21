@@ -5,8 +5,10 @@ Election database model with CRUD operations.
 from datetime import date
 from typing import List, Optional
 
-from sqlalchemy import Column, Date, Integer, String
+from sqlalchemy import Column
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Integer, String
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from ..base import Base
@@ -24,7 +26,9 @@ class Election(Base):
     # Columns
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    type = Column(SQLEnum("LOK_SABHA", "VIDHAN_SABHA", name="election_type"), nullable=False)
+    type = Column(
+        SQLEnum("LOK_SABHA", "VIDHAN_SABHA", name="election_type"), nullable=False
+    )
     year = Column(Integer, nullable=False, index=True)
     total_constituencies = Column(Integer, nullable=True)
     total_candidates = Column(Integer, nullable=True)
@@ -113,7 +117,9 @@ class Election(Base):
         Returns:
             List of Election instances
         """
-        return session.query(cls).order_by(cls.year.desc()).offset(skip).limit(limit).all()
+        return (
+            session.query(cls).order_by(cls.year.desc()).offset(skip).limit(limit).all()
+        )
 
     @classmethod
     def get_by_year(cls, session: Session, year: int) -> List["Election"]:
@@ -200,3 +206,55 @@ class Election(Base):
         session.flush()
         return election_objects
 
+    @classmethod
+    def bulk_upsert(cls, session: Session, elections: List[dict]) -> int:
+        """
+        Upsert multiple elections at once (insert if not exists, update if exists).
+
+        Uses PostgreSQL's ON CONFLICT DO UPDATE for efficient upsert operations.
+        If an election with the same primary key exists, it will be updated with new values.
+
+        Args:
+            session: Database session
+            elections: List of election dictionaries
+
+        Returns:
+            Number of records processed (inserted or updated)
+        """
+        if not elections:
+            return 0
+
+        # Prepare data for bulk insert
+        values = []
+        for e in elections:
+            values.append(
+                {
+                    "id": e.get("election_id", e.get("id")),
+                    "name": e["name"],
+                    "type": e["type"],
+                    "year": e["year"],
+                    "total_constituencies": e.get("total_constituencies"),
+                    "total_candidates": e.get("total_candidates"),
+                    "total_parties": e.get("total_parties"),
+                    "result_status": e.get("result_status"),
+                }
+            )
+
+        # Use PostgreSQL's ON CONFLICT DO UPDATE
+        stmt = pg_insert(cls.__table__).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["id"],
+            set_={
+                "name": stmt.excluded.name,
+                "type": stmt.excluded.type,
+                "year": stmt.excluded.year,
+                "total_constituencies": stmt.excluded.total_constituencies,
+                "total_candidates": stmt.excluded.total_candidates,
+                "total_parties": stmt.excluded.total_parties,
+                "result_status": stmt.excluded.result_status,
+            },
+        )
+
+        session.execute(stmt)
+        session.flush()
+        return len(elections)

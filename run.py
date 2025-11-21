@@ -3,16 +3,10 @@ Development server entry point for the Rajniti application.
 """
 import logging
 import os
-from pathlib import Path
 
-# Load environment variables from .env file BEFORE any app imports
-# This ensures DATABASE_URL and other env vars are available during
-# module initialization
 from dotenv import load_dotenv
 
-# Load .env file from project root
-env_path = Path(__file__).parent / ".env"
-load_dotenv(dotenv_path=env_path)
+load_dotenv()
 
 from app import create_app  # noqa: E402
 from app.core.env_checker import check_environment_variables  # noqa: E402
@@ -38,7 +32,7 @@ def main():
 
     # Server configuration
     host = os.getenv("FLASK_HOST", "0.0.0.0")
-    port = int(os.getenv("FLASK_PORT", "8080"))
+    port = int(os.getenv("FLASK_PORT", "8000"))
     debug = os.getenv("FLASK_DEBUG", "True").lower() == "true"
 
     logger.info(f"Starting Rajniti development server on {host}:{port}")
