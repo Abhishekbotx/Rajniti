@@ -8,18 +8,16 @@ Implementations can use JSON, database, or any other storage mechanism.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from app.models import Constituency, Election, Party
-
 
 class DataService(ABC):
     """Abstract data service interface"""
 
     @abstractmethod
-    def get_elections(self) -> List[Election]:
+    def get_elections(self) -> List[Dict[str, Any]]:
         """Get all available elections"""
 
     @abstractmethod
-    def get_election(self, election_id: str) -> Optional[Election]:
+    def get_election(self, election_id: str) -> Optional[Dict[str, Any]]:
         """Get a specific election by ID"""
 
     @abstractmethod
@@ -27,11 +25,11 @@ class DataService(ABC):
         """Get all candidates for an election"""
 
     @abstractmethod
-    def get_parties(self, election_id: str) -> List[Party]:
+    def get_parties(self, election_id: str) -> List[Dict[str, Any]]:
         """Get all parties for an election"""
 
     @abstractmethod
-    def get_constituencies(self, election_id: str) -> List[Constituency]:
+    def get_constituencies(self, election_id: str) -> List[Dict[str, Any]]:
         """Get all constituencies for an election"""
 
     @abstractmethod
@@ -47,11 +45,11 @@ class DataService(ABC):
         """Get a specific candidate"""
 
     @abstractmethod
-    def get_party_by_name(self, party_name: str, election_id: str) -> Optional[Party]:
+    def get_party_by_name(self, party_name: str, election_id: str) -> Optional[Dict[str, Any]]:
         """Get a specific party"""
 
     @abstractmethod
     def get_constituency_by_id(
         self, constituency_id: str, election_id: str
-    ) -> Optional[Constituency]:
+    ) -> Optional[Dict[str, Any]]:
         """Get a specific constituency"""

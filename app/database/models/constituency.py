@@ -4,7 +4,7 @@ Constituency database model with CRUD operations.
 
 from typing import List, Optional
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, Enum as SQLEnum, String
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -29,6 +29,7 @@ class Constituency(Base):
     )  # Original constituency ID for scraping
     name = Column(String, nullable=False, index=True)
     state_id = Column(String, nullable=False, index=True)
+    type = Column(SQLEnum("VS", "LS", name="constituency_type"), nullable=False)
 
     def __repr__(self) -> str:
         return (

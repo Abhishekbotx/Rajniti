@@ -28,9 +28,9 @@ class ConstituencyController:
         # Enrich with state names
         constituencies_data = []
         for const in constituencies:
-            const_dict = const.dict()
+            const_dict = const.copy()
             const_dict["state_name"] = self.data_service.get_state_name(
-                const.state_id
+                const["state_id"]
             )
             constituencies_data.append(const_dict)
 
@@ -41,7 +41,7 @@ class ConstituencyController:
 
         return {
             "election_id": election_id,
-            "election_name": election.name,
+            "election_name": election["name"],
             "total_constituencies": len(constituencies_data),
             "constituencies": constituencies_data,
         }
@@ -79,10 +79,10 @@ class ConstituencyController:
 
         return {
             "constituency": {
-                "id": constituency.id,
-                "name": constituency.name,
-                "state_id": constituency.state_id,
-                "state_name": self.data_service.get_state_name(constituency.state_id),
+                "id": constituency["id"],
+                "name": constituency["name"],
+                "state_id": constituency["state_id"],
+                "state_name": self.data_service.get_state_name(constituency["state_id"]),
             },
             "election_id": election_id,
             "total_candidates": len(constituency_candidates),
@@ -97,15 +97,15 @@ class ConstituencyController:
         # Only lok-sabha-2024 for now
         election = self.data_service.get_election("lok-sabha-2024")
         if election:
-            constituencies = self.data_service.get_constituencies(election.id)
+            constituencies = self.data_service.get_constituencies(election["id"])
             for const in constituencies:
-                if const.state_id.upper() == state_code.upper():
-                    const_data = const.dict()
+                if const["state_id"].upper() == state_code.upper():
+                    const_data = const.copy()
                     const_data["state_name"] = self.data_service.get_state_name(
-                        const.state_id
+                        const["state_id"]
                     )
-                    const_data["election_id"] = election.id
-                    const_data["election_name"] = election.name
+                    const_data["election_id"] = election["id"]
+                    const_data["election_name"] = election["name"]
                     results.append(const_data)
 
         # Sort by constituency name
