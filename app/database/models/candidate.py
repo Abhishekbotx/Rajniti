@@ -47,6 +47,8 @@ class Candidate(Base):
     political_background = Column(JSON, nullable=True)
     family_background = Column(JSON, nullable=True)
     assets = Column(JSON, nullable=True)
+    liabilities = Column(JSON, nullable=True)
+    crime_cases = Column(JSON, nullable=True)
 
     def __repr__(self) -> str:
         return f"<Candidate(id={self.id}, name={self.name}, party_id={self.party_id})>"
@@ -66,10 +68,12 @@ class Candidate(Base):
         type: str = "MP",
         image_url: Optional[str] = None,
         original_constituency_id: Optional[str] = None,
-        education_background: Optional[Dict[str, Any]] = None,
-        political_background: Optional[Dict[str, Any]] = None,
-        family_background: Optional[Dict[str, Any]] = None,
-        assets: Optional[Dict[str, Any]] = None,
+        education_background: Optional[List[Dict[str, Any]]] = None,
+        political_background: Optional[List[Dict[str, Any]]] = None,
+        family_background: Optional[List[Dict[str, Any]]] = None,
+        assets: Optional[List[Dict[str, Any]]] = None,
+        liabilities: Optional[List[Dict[str, Any]]] = None,
+        crime_cases: Optional[List[Dict[str, Any]]] = None,
     ) -> "Candidate":
         """
         Create a new candidate.
@@ -89,6 +93,8 @@ class Candidate(Base):
             political_background: Political background data (optional)
             family_background: Family background data (optional)
             assets: Assets data (optional)
+            liabilities: Liabilities data (optional)
+            crime_cases: Crime cases data (optional)
 
         Returns:
             Created Candidate instance
@@ -117,6 +123,8 @@ class Candidate(Base):
             political_background=political_background,
             family_background=family_background,
             assets=assets,
+            liabilities=liabilities,
+            crime_cases=crime_cases,
         )
         session.add(candidate)
         session.flush()
@@ -280,6 +288,8 @@ class Candidate(Base):
                 political_background=c.get("political_background"),
                 family_background=c.get("family_background"),
                 assets=c.get("assets"),
+                liabilities=c.get("liabilities"),
+                crime_cases=c.get("crime_cases"),
             )
             for c in candidates
         ]
@@ -328,6 +338,8 @@ class Candidate(Base):
                     "political_background": c.get("political_background"),
                     "family_background": c.get("family_background"),
                     "assets": c.get("assets"),
+                    "liabilities": c.get("liabilities"),
+                    "crime_cases": c.get("crime_cases"),
                 }
             )
 
@@ -348,6 +360,8 @@ class Candidate(Base):
                 "political_background": stmt.excluded.political_background,
                 "family_background": stmt.excluded.family_background,
                 "assets": stmt.excluded.assets,
+                "liabilities": stmt.excluded.liabilities,
+                "crime_cases": stmt.excluded.crime_cases,
             },
         )
 
