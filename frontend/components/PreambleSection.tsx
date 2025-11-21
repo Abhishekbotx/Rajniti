@@ -1,3 +1,5 @@
+import Text from "@/components/ui/Text"
+
 export default function PreambleSection() {
     return (
         <section className='py-20 bg-gradient-to-br from-orange-50 via-white to-green-50 relative overflow-hidden'>
@@ -11,12 +13,12 @@ export default function PreambleSection() {
                     <div className='inline-block'>
                         <div className='h-1 w-32 bg-gradient-to-r from-orange-500 via-white to-green-600 rounded-full mb-6'></div>
                     </div>
-                    <h2 className='text-2xl sm:text-3xl font-bold text-gray-900 mb-2'>
+                    <Text variant="h2" weight="bold" className='text-gray-900 mb-2'>
                         The Constitution of India
-                    </h2>
-                    <p className='text-gray-600'>
+                    </Text>
+                    <Text variant="body" className='text-gray-600'>
                         The Preamble to our Constitution
-                    </p>
+                    </Text>
                 </div>
 
                 {/* Main Preamble Card */}
@@ -28,68 +30,68 @@ export default function PreambleSection() {
                     <div className='p-8 sm:p-12'>
                         {/* Opening Line - Emphasized */}
                         <div className='mb-8 text-center'>
-                            <h3 className='text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-600 via-gray-800 to-green-600 bg-clip-text text-transparent leading-tight'>
+                            <Text variant="h2" className='text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-600 via-gray-800 to-green-600 bg-clip-text text-transparent leading-tight'>
                                 WE, THE PEOPLE OF INDIA
-                            </h3>
+                            </Text>
                         </div>
 
                         {/* Preamble Text */}
                         <div className='space-y-6 text-gray-700 text-base sm:text-lg leading-relaxed'>
-                            <p className='text-center italic'>
+                            <Text variant="body" className='text-center italic block'>
                                 having solemnly resolved to constitute India into a
-                            </p>
+                            </Text>
 
-                            <p className='text-center font-semibold text-xl sm:text-2xl text-gray-900'>
+                            <Text variant="h3" weight="semibold" className='text-center text-xl sm:text-2xl text-gray-900'>
                                 SOVEREIGN SOCIALIST SECULAR
                                 <br />
                                 DEMOCRATIC REPUBLIC
-                            </p>
+                            </Text>
 
-                            <p className='text-center'>and to secure to all its citizens:</p>
+                            <Text variant="body" className='text-center block'>and to secure to all its citizens:</Text>
 
                             {/* Key Principles */}
                             <div className='grid sm:grid-cols-2 gap-6 my-8'>
                                 <div className='bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200'>
-                                    <h4 className='font-bold text-orange-900 mb-2 text-lg'>
+                                    <Text variant="h4" weight="bold" className='text-orange-900 mb-2 text-lg'>
                                         JUSTICE
-                                    </h4>
-                                    <p className='text-orange-800 text-sm'>
+                                    </Text>
+                                    <Text variant="small" className='text-orange-800'>
                                         social, economic and political
-                                    </p>
+                                    </Text>
                                 </div>
 
                                 <div className='bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200'>
-                                    <h4 className='font-bold text-blue-900 mb-2 text-lg'>
+                                    <Text variant="h4" weight="bold" className='text-blue-900 mb-2 text-lg'>
                                         LIBERTY
-                                    </h4>
-                                    <p className='text-blue-800 text-sm'>
+                                    </Text>
+                                    <Text variant="small" className='text-blue-800'>
                                         of thought, expression, belief, faith and worship
-                                    </p>
+                                    </Text>
                                 </div>
 
                                 <div className='bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200'>
-                                    <h4 className='font-bold text-purple-900 mb-2 text-lg'>
+                                    <Text variant="h4" weight="bold" className='text-purple-900 mb-2 text-lg'>
                                         EQUALITY
-                                    </h4>
-                                    <p className='text-purple-800 text-sm'>
+                                    </Text>
+                                    <Text variant="small" className='text-purple-800'>
                                         of status and of opportunity
-                                    </p>
+                                    </Text>
                                 </div>
 
                                 <div className='bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200'>
-                                    <h4 className='font-bold text-green-900 mb-2 text-lg'>
+                                    <Text variant="h4" weight="bold" className='text-green-900 mb-2 text-lg'>
                                         FRATERNITY
-                                    </h4>
-                                    <p className='text-green-800 text-sm'>
+                                    </Text>
+                                    <Text variant="small" className='text-green-800'>
                                         assuring the dignity of the individual and the
                                         unity and integrity of the Nation
-                                    </p>
+                                    </Text>
                                 </div>
                             </div>
 
                             {/* Closing Statement */}
                             <div className='text-center pt-6 border-t border-gray-200'>
-                                <p className='text-sm text-gray-600 italic'>
+                                <Text variant="small" className='text-gray-600 italic'>
                                     In our Constituent Assembly this twenty-sixth day of
                                     November, 1949,
                                     <br />
@@ -98,7 +100,7 @@ export default function PreambleSection() {
                                         HEREBY ADOPT, ENACT AND GIVE TO OURSELVES THIS
                                         CONSTITUTION
                                     </span>
-                                </p>
+                                </Text>
                             </div>
                         </div>
                     </div>
@@ -144,7 +146,7 @@ export default function PreambleSection() {
                             />
                         </svg>
                     </div>
-                    <p className='text-xs text-gray-500 mt-2'>Satyameva Jayate</p>
+                    <Text variant="caption" className='text-gray-500 mt-2'>Satyameva Jayate</Text>
                 </div>
             </div>
         </section>
