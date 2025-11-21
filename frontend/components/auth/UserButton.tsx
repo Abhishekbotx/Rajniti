@@ -33,7 +33,7 @@ export default function UserButton() {
     }
 
     return (
-        <div className='relative z-50' ref={menuRef}>
+        <div className='relative z-50'>
             <button
                 onClick={() => setShowMenu(!showMenu)}
                 className='flex items-center gap-2 p-1 pr-3 border-2 border-orange-200 rounded-full hover:border-orange-300 transition-all cursor-pointer'>
