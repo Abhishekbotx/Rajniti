@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck"
-import { Navbar } from "@/components/layout"
+import { Footer, Navbar } from "@/components/layout"
 import Button from "@/components/ui/Button"
 import Text from "@/components/ui/Text"
 import Image from "@/components/ui/Image"
@@ -45,7 +45,7 @@ const API_BASE_URL =
 export default function Dashboard() {
     // Check onboarding status and redirect if not completed
     const { loading: onboardingLoading } = useOnboardingCheck(true)
-    
+
     const [selectedElection, setSelectedElection] = useState<Election | null>(
         null
     )
@@ -181,15 +181,17 @@ export default function Dashboard() {
                 <div className='bg-white rounded-lg shadow-lg p-8 max-w-md w-full border-l-4 border-red-500'>
                     <div className='flex items-center gap-3 mb-4'>
                         <div className='text-red-500 text-3xl'>⚠️</div>
-                        <Text variant="h4" weight="bold" className='text-gray-900'>
+                        <Text
+                            variant='h4'
+                            weight='bold'
+                            className='text-gray-900'>
                             Connection Error
                         </Text>
                     </div>
-                    <Text variant="body" className='text-gray-600 mb-4'>{error}</Text>
-                    <Button
-                        onClick={fetchElections}
-                        fullWidth
-                    >
+                    <Text variant='body' className='text-gray-600 mb-4'>
+                        {error}
+                    </Text>
+                    <Button onClick={fetchElections} fullWidth>
                         Try Again
                     </Button>
                 </div>
@@ -199,60 +201,85 @@ export default function Dashboard() {
 
     return (
         <div className='min-h-screen bg-gradient-to-b from-orange-50 via-white to-green-50'>
-            <Navbar variant="dashboard" sticky={true} />
+            <Navbar variant='dashboard' sticky={true} />
 
             <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8'>
                 {/* Election Overview Section */}
                 {selectedElection && (
                     <div className='mb-8'>
                         <div className='bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-8 text-white shadow-lg'>
-                            <Text variant="h2" weight="bold" className='text-white mb-2'>
+                            <Text
+                                variant='h2'
+                                weight='bold'
+                                className='text-white mb-2'>
                                 {selectedElection.name}
                             </Text>
-                            <Text variant="body" className='text-orange-100 mb-6'>
+                            <Text
+                                variant='body'
+                                className='text-orange-100 mb-6'>
                                 Year: {selectedElection.year} | Type:{" "}
                                 {selectedElection.type}
                             </Text>
 
                             <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
                                 <div className='bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20'>
-                                    <Text variant="h3" weight="bold" className='text-white'>
+                                    <Text
+                                        variant='h3'
+                                        weight='bold'
+                                        className='text-white'>
                                         {
                                             selectedElection.statistics
                                                 .total_constituencies
                                         }
                                     </Text>
-                                    <Text variant="small" className='text-orange-100 mt-1'>
+                                    <Text
+                                        variant='small'
+                                        className='text-orange-100 mt-1'>
                                         Constituencies
                                     </Text>
                                 </div>
                                 <div className='bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20'>
-                                    <Text variant="h3" weight="bold" className='text-white'>
+                                    <Text
+                                        variant='h3'
+                                        weight='bold'
+                                        className='text-white'>
                                         {selectedElection.statistics.total_candidates.toLocaleString()}
                                     </Text>
-                                    <Text variant="small" className='text-orange-100 mt-1'>
+                                    <Text
+                                        variant='small'
+                                        className='text-orange-100 mt-1'>
                                         Candidates
                                     </Text>
                                 </div>
                                 <div className='bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20'>
-                                    <Text variant="h3" weight="bold" className='text-white'>
+                                    <Text
+                                        variant='h3'
+                                        weight='bold'
+                                        className='text-white'>
                                         {
                                             selectedElection.statistics
                                                 .total_parties
                                         }
                                     </Text>
-                                    <Text variant="small" className='text-orange-100 mt-1'>
+                                    <Text
+                                        variant='small'
+                                        className='text-orange-100 mt-1'>
                                         Parties
                                     </Text>
                                 </div>
                                 <div className='bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20'>
-                                    <Text variant="h3" weight="bold" className='text-white'>
+                                    <Text
+                                        variant='h3'
+                                        weight='bold'
+                                        className='text-white'>
                                         {
                                             selectedElection.statistics
                                                 .total_winners
                                         }
                                     </Text>
-                                    <Text variant="small" className='text-orange-100 mt-1'>
+                                    <Text
+                                        variant='small'
+                                        className='text-orange-100 mt-1'>
                                         Winners
                                     </Text>
                                 </div>
@@ -264,8 +291,11 @@ export default function Dashboard() {
                 {/* Search Section */}
                 <div className='mb-8'>
                     <div className='bg-white rounded-2xl shadow-lg p-6 border border-gray-200'>
-                        <Text variant="h3" weight="bold" className='text-gray-900 mb-4'>
-                            🔍 Search Candidates
+                        <Text
+                            variant='h3'
+                            weight='bold'
+                            className='text-gray-900 mb-4'>
+                            Search Candidates
                         </Text>
                         <form onSubmit={handleSearch} className='flex gap-2'>
                             <input
@@ -279,9 +309,8 @@ export default function Dashboard() {
                                 type='submit'
                                 disabled={searchLoading}
                                 isLoading={searchLoading}
-                                size="lg"
-                                className="px-8"
-                            >
+                                size='lg'
+                                className='px-8'>
                                 {searchLoading ? "Searching..." : "Search"}
                             </Button>
                         </form>
@@ -289,7 +318,10 @@ export default function Dashboard() {
                         {/* Search Results */}
                         {candidates.length > 0 && (
                             <div className='mt-6 space-y-3'>
-                                <Text variant="body" weight="semibold" className='text-gray-700'>
+                                <Text
+                                    variant='body'
+                                    weight='semibold'
+                                    className='text-gray-700'>
                                     Results ({candidates.length})
                                 </Text>
                                 <div className='grid gap-3'>
@@ -300,26 +332,35 @@ export default function Dashboard() {
                                             <div className='flex items-center gap-4'>
                                                 {candidate.image_url && (
                                                     <Image
-                                                        src={candidate.image_url}
+                                                        src={
+                                                            candidate.image_url
+                                                        }
                                                         alt={candidate.name}
                                                         width={64}
                                                         height={64}
-                                                        rounded="full"
+                                                        rounded='full'
                                                         className='w-16 h-16 object-cover border-2 border-orange-200'
                                                     />
                                                 )}
                                                 <div className='flex-1'>
-                                                    <Text variant="body" weight="bold" className='text-gray-900'>
+                                                    <Text
+                                                        variant='body'
+                                                        weight='bold'
+                                                        className='text-gray-900'>
                                                         {candidate.name}
                                                     </Text>
-                                                    <Text variant="small" className='text-gray-600'>
+                                                    <Text
+                                                        variant='small'
+                                                        className='text-gray-600'>
                                                         {candidate.party_name} (
                                                         {
                                                             candidate.party_short_name
                                                         }
                                                         )
                                                     </Text>
-                                                    <Text variant="small" className='text-gray-500'>
+                                                    <Text
+                                                        variant='small'
+                                                        className='text-gray-500'>
                                                         {
                                                             candidate.constituency_name
                                                         }
@@ -358,8 +399,11 @@ export default function Dashboard() {
                 {parties.length > 0 && (
                     <div className='mb-8'>
                         <div className='bg-white rounded-2xl shadow-lg p-6 border border-gray-200'>
-                            <Text variant="h3" weight="bold" className='text-gray-900 mb-4'>
-                                🎯 Major Parties
+                            <Text
+                                variant='h3'
+                                weight='bold'
+                                className='text-gray-900 mb-4'>
+                                Major Parties
                             </Text>
                             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                                 {parties.map((party, index) => (
@@ -373,10 +417,15 @@ export default function Dashboard() {
                                                 )}
                                             </div>
                                             <div className='flex-1'>
-                                                <Text variant="body" weight="bold" className='text-gray-900 text-sm'>
+                                                <Text
+                                                    variant='body'
+                                                    weight='bold'
+                                                    className='text-gray-900 text-sm'>
                                                     {party.party_name}
                                                 </Text>
-                                                <Text variant="caption" className='text-gray-600'>
+                                                <Text
+                                                    variant='caption'
+                                                    className='text-gray-600'>
                                                     {party.party_short_name}
                                                     {party.total_seats &&
                                                         ` • ${party.total_seats} seats`}
@@ -391,14 +440,7 @@ export default function Dashboard() {
                 )}
 
                 {/* Footer Info */}
-                <div className='text-center py-8'>
-                    <div className='inline-flex items-center gap-2 bg-white rounded-full px-6 py-3 shadow-md border border-gray-200'>
-                        <div className='w-2 h-2 rounded-full bg-green-500 animate-pulse'></div>
-                        <Text variant="small" className='text-gray-600'>
-                            Data powered by Rajniti Election API
-                        </Text>
-                    </div>
-                </div>
+                <Footer />
             </div>
         </div>
     )

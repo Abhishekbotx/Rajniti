@@ -56,9 +56,6 @@ export default function UserButton() {
                         <Text variant='small' weight='semibold' color='default'>
                             {session.user?.name}
                         </Text>
-                        <Text variant='caption' color='muted'>
-                            {session.user?.email}
-                        </Text>
                     </div>
 
                     <Link
