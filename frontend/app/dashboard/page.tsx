@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck"
-import { Navbar } from "@/components/layout"
+import { Footer, Navbar } from "@/components/layout"
 import Button from "@/components/ui/Button"
 import Text from "@/components/ui/Text"
 import Image from "@/components/ui/Image"
@@ -440,14 +440,7 @@ export default function Dashboard() {
                 )}
 
                 {/* Footer Info */}
-                <div className='text-center py-8'>
-                    <div className='inline-flex items-center gap-2 bg-white rounded-full px-6 py-3 shadow-md border border-gray-200'>
-                        <div className='w-2 h-2 rounded-full bg-green-500 animate-pulse'></div>
-                        <Text variant='small' className='text-gray-600'>
-                            Data powered by Rajniti Election API
-                        </Text>
-                    </div>
-                </div>
+                <Footer />
             </div>
         </div>
     )
