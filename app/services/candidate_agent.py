@@ -13,6 +13,14 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.database.models import Candidate
+from app.schemas.candidate_data import (
+    EducationDetails,
+    PoliticalHistory,
+    FamilyMember,
+    AssetDetails,
+    LiabilityDetails,
+    CrimeCaseDetails,
+)
 from app.services.perplexity_service import PerplexityService
 
 logger = logging.getLogger(__name__)
@@ -57,11 +65,14 @@ class CandidateDataAgent:
         # Query candidates where at least one detailed field is null
         candidates = (
             session.query(Candidate)
-            # .filter(
-            #     (Candidate.education_background.is_(None))
-            #     | (Candidate.family_background.is_(None))
-            #     | (Candidate.assets.is_(None))
-            # )
+            .filter(
+                (Candidate.education_background.is_(None))
+                | (Candidate.political_background.is_(None))
+                | (Candidate.family_background.is_(None))
+                | (Candidate.assets.is_(None))
+                | (Candidate.liabilities.is_(None))
+                | (Candidate.crime_cases.is_(None))
+            )
             .limit(limit)
             .all()
         )
@@ -75,7 +86,7 @@ class CandidateDataAgent:
 
         Args:
             candidate: Candidate object
-            data_type: Type of data to fetch (education, political, family, assets)
+            data_type: Type of data to fetch (education, political, family, assets, liabilities, crime)
 
         Returns:
             Formatted query string
@@ -86,31 +97,58 @@ class CandidateDataAgent:
         if candidate.constituency_id:
             base_info += f" from constituency {candidate.constituency_id}"
 
+        source_instruction = "Please use https://www.myneta.info/ as the primary source for this information."
+        
+        common_instruction = (
+            f"{source_instruction} "
+            "If the information is not available, return an empty list []. "
+            "Return ONLY the JSON object, no other text."
+        )
+
         queries = {
-            "education": f"What is the education background of Indian politician {base_info}? "
-            f"Provide graduation year, stream/field of study, and college/school name in JSON format: "
-            f'{{"graduation_year": <year>, "stream": "<field>", "college_or_school": "<name>"}}',
-            "political": f"What is the political history of Indian politician {base_info}? "
-            f"List all elections contested with year, type (MP/MLA), constituency, party, and result in JSON format: "
-            f'{{"elections": [{{"election_year": <year>, "election_type": "<MP/MLA>", '
-            f'"constituency": "<name>", "party": "<party>", "status": "<WON/LOST>"}}]}}',
-            "family": f"What is the family background of Indian politician {base_info}? "
-            f"Provide information about father, mother, spouse, and children with their names and professions in JSON format: "
-            f'{{"father": {{"name": "<name>", "profession": "<profession>"}}, '
-            f'"mother": {{"name": "<name>", "profession": "<profession>"}}, '
-            f'"spouse": {{"name": "<name>", "profession": "<profession>"}}, '
-            f'"children": [{{"name": "<name>", "profession": "<profession>"}}]}}',
-            "assets": f"What are the declared assets of Indian politician {base_info}? "
-            f"Provide commercial assets, cash assets, and bank details in JSON format: "
-            f'{{"commercial_assets": "<description>", "cash_assets": "<description>", '
-            f'"bank_details": [{{"bank_name": "<name>", "branch": "<branch>"}}]}}',
+            "education": (
+                f"What is the education background of Indian politician {base_info}? "
+                f"Provide a list of educational qualifications with year, college, stream, and other details. "
+                f"{common_instruction} "
+                f"Format: [{{'year': '...', 'college': '...', 'stream': '...', 'other_details': '...'}}]"
+            ),
+            "political": (
+                f"What is the political history of Indian politician {base_info}? "
+                f"List all elections contested with party, constituency, election_year, position (MP/MLA), and result (WON/LOST). "
+                f"{common_instruction} "
+                f"Format: [{{'party': '...', 'constituency': '...', 'election_year': '...', 'position': '...', 'result': 'WON/LOST'}}]"
+            ),
+            "family": (
+                f"What is the family background of Indian politician {base_info}? "
+                f"Provide information about family members including name, profession, relation, and age. "
+                f"{common_instruction} "
+                f"Format: [{{'name': '...', 'profession': '...', 'relation': '...', 'age': '...'}}]"
+            ),
+            "assets": (
+                f"What are the declared assets of Indian politician {base_info}? "
+                f"List assets with type (CASH/BOND/LAND/EQUITY/AUTOMOBILE/JEWELRY/OTHER), amount, description, and owned_by (SELF/SPOUSE/DEPENDENT/HUF/OTHER). "
+                f"{common_instruction} "
+                f"Format: [{{'type': '...', 'amount': 1000.0, 'description': '...', 'owned_by': '...'}}]"
+            ),
+            "liabilities": (
+                f"What are the declared liabilities of Indian politician {base_info}? "
+                f"List liabilities with type (LOAN/OTHER), amount, description, and owned_by (SELF/SPOUSE/DEPENDENT/HUF/OTHER). "
+                f"{common_instruction} "
+                f"Format: [{{'type': '...', 'amount': 1000.0, 'description': '...', 'owned_by': '...'}}]"
+            ),
+            "crime_cases": (
+                f"What are the criminal cases against Indian politician {base_info}? "
+                f"List cases with FIR No, Police Station, Sections Applied (as list), Charges Framed (boolean), and description. "
+                f"{common_instruction} "
+                f"Format: [{{'fir_no': '...', 'police_station': '...', 'sections_applied': ['...'], 'charges_framed': true/false, 'description': '...'}}]"
+            ),
         }
 
         return queries.get(data_type, "")
 
     def _extract_json_from_response(
         self, response_text: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[Any]:
         """
         Extract JSON data from Perplexity response.
 
@@ -118,16 +156,29 @@ class CandidateDataAgent:
             response_text: Raw response text from Perplexity
 
         Returns:
-            Parsed JSON dictionary or None if extraction fails
+            Parsed JSON object or None if extraction fails
         """
         try:
             # Try to find JSON in the response
-            # Look for content between curly braces
-            start_idx = response_text.find("{")
-            end_idx = response_text.rfind("}")
+            # Look for content between first [ and last ] if list is expected, or { }
+            start_idx_list = response_text.find("[")
+            end_idx_list = response_text.rfind("]")
+            
+            start_idx_dict = response_text.find("{")
+            end_idx_dict = response_text.rfind("}")
 
-            if start_idx != -1 and end_idx != -1:
-                json_str = response_text[start_idx : end_idx + 1]
+            if start_idx_list != -1 and end_idx_list != -1:
+                # Prefer list if found (since we expect lists mostly)
+                 # If list is inside dict, we might want the dict, but our prompts ask for lists usually
+                 # except for wrapped responses. Let's try to parse whatever looks like valid JSON.
+                 
+                 # If [ is before {, it's likely a list at root.
+                 if start_idx_dict == -1 or start_idx_list < start_idx_dict:
+                     json_str = response_text[start_idx_list : end_idx_list + 1]
+                     return json.loads(json_str)
+            
+            if start_idx_dict != -1 and end_idx_dict != -1:
+                json_str = response_text[start_idx_dict : end_idx_dict + 1]
                 return json.loads(json_str)
 
             return None
@@ -137,147 +188,141 @@ class CandidateDataAgent:
 
     def fetch_education_background(
         self, candidate: Candidate
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Fetch education background for a candidate.
-
-        Args:
-            candidate: Candidate object
-
-        Returns:
-            Education background dictionary or None if fetch fails
-        """
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Fetch education background."""
         logger.info(f"Fetching education background for {candidate.name}")
-
         try:
             query = self._create_data_query(candidate, "education")
             result = self.perplexity.search_india(query)
-
+            
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
 
-            # Extract JSON from response
             data = self._extract_json_from_response(result.get("answer", ""))
-
-            if data:
+            if isinstance(data, list):
+                # Validate with Pydantic
+                validated_data = [EducationDetails(**item).dict() for item in data]
                 logger.info(f"✅ Education data found for {candidate.name}")
-                return data
-            else:
-                logger.warning(
-                    f"⚠️  No structured education data found for {candidate.name}"
-                )
-                return None
-
+                return validated_data
+            return None
         except Exception as e:
             logger.error(f"Error fetching education background: {e}")
             return None
 
     def fetch_political_background(
         self, candidate: Candidate
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Fetch political background for a candidate.
-
-        Args:
-            candidate: Candidate object
-
-        Returns:
-            Political background dictionary or None if fetch fails
-        """
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Fetch political background."""
         logger.info(f"Fetching political background for {candidate.name}")
-
         try:
             query = self._create_data_query(candidate, "political")
             result = self.perplexity.search_india(query)
-
+            
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
-
-            if data and "elections" in data:
+            if isinstance(data, list):
+                validated_data = [PoliticalHistory(**item).dict() for item in data]
                 logger.info(f"✅ Political history found for {candidate.name}")
-                return data
-            else:
-                logger.warning(
-                    f"⚠️  No structured political data found for {candidate.name}"
-                )
-                return None
-
+                return validated_data
+            return None
         except Exception as e:
             logger.error(f"Error fetching political background: {e}")
             return None
 
-    def fetch_family_background(self, candidate: Candidate) -> Optional[Dict[str, Any]]:
-        """
-        Fetch family background for a candidate.
-
-        Args:
-            candidate: Candidate object
-
-        Returns:
-            Family background dictionary or None if fetch fails
-        """
+    def fetch_family_background(
+        self, candidate: Candidate
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Fetch family background."""
         logger.info(f"Fetching family background for {candidate.name}")
-
         try:
             query = self._create_data_query(candidate, "family")
             result = self.perplexity.search_india(query)
-
+            
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
-
-            if data:
+            if isinstance(data, list):
+                validated_data = [FamilyMember(**item).dict() for item in data]
                 logger.info(f"✅ Family data found for {candidate.name}")
-                return data
-            else:
-                logger.warning(
-                    f"⚠️  No structured family data found for {candidate.name}"
-                )
-                return None
-
+                return validated_data
+            return None
         except Exception as e:
             logger.error(f"Error fetching family background: {e}")
             return None
 
-    def fetch_assets(self, candidate: Candidate) -> Optional[Dict[str, Any]]:
-        """
-        Fetch assets information for a candidate.
-
-        Args:
-            candidate: Candidate object
-
-        Returns:
-            Assets dictionary or None if fetch fails
-        """
+    def fetch_assets(
+        self, candidate: Candidate
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Fetch assets."""
         logger.info(f"Fetching assets information for {candidate.name}")
-
         try:
             query = self._create_data_query(candidate, "assets")
             result = self.perplexity.search_india(query)
-
+            
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
-
-            if data:
+            if isinstance(data, list):
+                validated_data = [AssetDetails(**item).dict() for item in data]
                 logger.info(f"✅ Assets information found for {candidate.name}")
-                return data
-            else:
-                logger.warning(
-                    f"⚠️  No structured assets data found for {candidate.name}"
-                )
-                return None
-
+                return validated_data
+            return None
         except Exception as e:
             logger.error(f"Error fetching assets: {e}")
+            return None
+
+    def fetch_liabilities(
+        self, candidate: Candidate
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Fetch liabilities."""
+        logger.info(f"Fetching liabilities information for {candidate.name}")
+        try:
+            query = self._create_data_query(candidate, "liabilities")
+            result = self.perplexity.search_india(query)
+            
+            if result.get("error"):
+                logger.error(f"Perplexity error: {result['error']}")
+                return None
+
+            data = self._extract_json_from_response(result.get("answer", ""))
+            if isinstance(data, list):
+                validated_data = [LiabilityDetails(**item).dict() for item in data]
+                logger.info(f"✅ Liabilities information found for {candidate.name}")
+                return validated_data
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching liabilities: {e}")
+            return None
+
+    def fetch_crime_cases(
+        self, candidate: Candidate
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Fetch crime cases."""
+        logger.info(f"Fetching crime cases for {candidate.name}")
+        try:
+            query = self._create_data_query(candidate, "crime_cases")
+            result = self.perplexity.search_india(query)
+            
+            if result.get("error"):
+                logger.error(f"Perplexity error: {result['error']}")
+                return None
+
+            data = self._extract_json_from_response(result.get("answer", ""))
+            if isinstance(data, list):
+                validated_data = [CrimeCaseDetails(**item).dict() for item in data]
+                logger.info(f"✅ Crime cases found for {candidate.name}")
+                return validated_data
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching crime cases: {e}")
             return None
 
     def populate_candidate_data(
@@ -303,44 +348,33 @@ class CandidateDataAgent:
 
         status = {
             "education": False,
+            "political": False,
             "family": False,
             "assets": False,
+            "liabilities": False,
+            "crime_cases": False,
         }
 
         update_data = {}
 
-        # Fetch education background if missing
-        if candidate.education_background is None:
-            education = self.fetch_education_background(candidate)
-            if education:
-                update_data["education_background"] = education
-                status["education"] = True
-            time.sleep(delay_between_requests)
-        else:
-            logger.info(f"⏭️  Education data already exists for {candidate.name}")
-            status["education"] = True
+        # Helper to fetch and update
+        def fetch_and_update(field_name, fetch_method, status_key):
+            if getattr(candidate, field_name) is None:
+                data = fetch_method(candidate)
+                if data is not None:
+                    update_data[field_name] = data
+                    status[status_key] = True
+                time.sleep(delay_between_requests)
+            else:
+                logger.info(f"⏭️  {status_key.capitalize()} data already exists for {candidate.name}")
+                status[status_key] = True
 
-        # Fetch family background if missing
-        if candidate.family_background is None:
-            family = self.fetch_family_background(candidate)
-            if family:
-                update_data["family_background"] = family
-                status["family"] = True
-            time.sleep(delay_between_requests)
-        else:
-            logger.info(f"⏭️  Family data already exists for {candidate.name}")
-            status["family"] = True
-
-        # Fetch assets if missing
-        if candidate.assets is None:
-            assets = self.fetch_assets(candidate)
-            if assets:
-                update_data["assets"] = assets
-                status["assets"] = True
-            time.sleep(delay_between_requests)
-        else:
-            logger.info(f"⏭️  Assets data already exists for {candidate.name}")
-            status["assets"] = True
+        fetch_and_update("education_background", self.fetch_education_background, "education")
+        fetch_and_update("political_background", self.fetch_political_background, "political")
+        fetch_and_update("family_background", self.fetch_family_background, "family")
+        fetch_and_update("assets", self.fetch_assets, "assets")
+        fetch_and_update("liabilities", self.fetch_liabilities, "liabilities")
+        fetch_and_update("crime_cases", self.fetch_crime_cases, "crime_cases")
 
         # Update candidate if we have new data
         if update_data:
@@ -355,10 +389,8 @@ class CandidateDataAgent:
                 logger.error(f"❌ Failed to update candidate: {e}")
 
         logger.info(f"\n📋 Summary for {candidate.name}:")
-        logger.info(f"   - Education: {'✓' if status['education'] else '✗'}")
-        logger.info(f"   - Political History: {'✓' if status['political'] else '✗'}")
-        logger.info(f"   - Family: {'✓' if status['family'] else '✗'}")
-        logger.info(f"   - Assets: {'✓' if status['assets'] else '✗'}")
+        for key, val in status.items():
+            logger.info(f"   - {key.capitalize()}: {'✓' if val else '✗'}")
 
         return status
 
@@ -398,7 +430,7 @@ class CandidateDataAgent:
         # Process each candidate
         stats = {
             "total_processed": 0,
-            "successful": 0,  # All 4 fields populated
+            "successful": 0,  # All 6 fields populated
             "partial": 0,  # Some fields populated
             "failed": 0,  # No fields populated
         }
@@ -413,7 +445,7 @@ class CandidateDataAgent:
             stats["total_processed"] += 1
 
             fields_populated = sum(status.values())
-            if fields_populated == 4:
+            if fields_populated == 6:
                 stats["successful"] += 1
             elif fields_populated > 0:
                 stats["partial"] += 1
@@ -429,7 +461,7 @@ class CandidateDataAgent:
         logger.info("🎉 Agent Run Complete")
         logger.info("=" * 60 + "\n")
         logger.info(f"Total candidates processed: {stats['total_processed']}")
-        logger.info(f"Fully populated (4/4 fields): {stats['successful']}")
+        logger.info(f"Fully populated (6/6 fields): {stats['successful']}")
         logger.info(f"Partially populated: {stats['partial']}")
         logger.info(f"Failed to populate: {stats['failed']}")
         logger.info("")
