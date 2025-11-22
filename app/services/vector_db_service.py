@@ -12,7 +12,7 @@ class VectorDBService:
     Designed to be fast and simple, using a local persistent directory.
     """
 
-    def __init__(self, collection_name: str = "rajniti_data", persist_path: str = "data/chroma_db"):
+    def __init__(self, collection_name: str = "candidates", persist_path: str = "data/chroma_db"):
         """
         Initialize the VectorDBService.
 
