@@ -45,6 +45,10 @@ class DataService(ABC):
         """Get a specific candidate"""
 
     @abstractmethod
+    def get_candidate_by_id_only(self, candidate_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific candidate without election_id"""
+
+    @abstractmethod
     def get_party_by_name(self, party_name: str, election_id: str) -> Optional[Dict[str, Any]]:
         """Get a specific party"""
 
