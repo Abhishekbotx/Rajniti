@@ -8,6 +8,7 @@ It finds candidates with missing data, fetches the information, and updates the 
 import json
 import logging
 import time
+import re
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
@@ -105,8 +106,9 @@ class CandidateDataAgent:
         common_instruction = (
             f"{source_instruction} "
             "If the information is not available, return an empty list []. "
-            "Return ONLY the JSON object, no other text. "
-            "Do not include any source citations, links, or 'According to...' phrases in the values."
+            "Return ONLY the raw JSON object, no markdown formatting, no code blocks, no other text. "
+            "Do not include any source citations, links, or 'According to...' phrases in the values. "
+            "Ensure valid JSON format."
         )
 
         queries = {
@@ -163,8 +165,22 @@ class CandidateDataAgent:
             Parsed JSON object or None if extraction fails
         """
         try:
+            # Remove markdown code blocks if present
+            match = re.search(r"```(?:json)?\s*(.*?)```", response_text, re.DOTALL)
+            if match:
+                response_text = match.group(1)
+            
+            # Strip whitespace
+            response_text = response_text.strip()
+
+            # Try to parse directly
+            try:
+                return json.loads(response_text)
+            except json.JSONDecodeError:
+                pass
+
+            # Fallback: find array or object
             # Try to find JSON in the response
-            # Look for content between first [ and last ] if list is expected, or { }
             start_idx_list = response_text.find("[")
             end_idx_list = response_text.rfind("]")
             
@@ -172,10 +188,6 @@ class CandidateDataAgent:
             end_idx_dict = response_text.rfind("}")
 
             if start_idx_list != -1 and end_idx_list != -1:
-                # Prefer list if found (since we expect lists mostly)
-                 # If list is inside dict, we might want the dict, but our prompts ask for lists usually
-                 # except for wrapped responses. Let's try to parse whatever looks like valid JSON.
-                 
                  # If [ is before {, it's likely a list at root.
                  if start_idx_dict == -1 or start_idx_list < start_idx_dict:
                      json_str = response_text[start_idx_list : end_idx_list + 1]
@@ -186,8 +198,10 @@ class CandidateDataAgent:
                 return json.loads(json_str)
 
             return None
-        except json.JSONDecodeError as e:
+        except Exception as e:
             logger.warning(f"Failed to parse JSON from response: {e}")
+            # Log the raw response for debugging
+            logger.debug(f"Raw response: {response_text[:200]}...") 
             return None
 
     def fetch_education_background(
@@ -204,6 +218,9 @@ class CandidateDataAgent:
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
+            if isinstance(data, dict):
+                data = [data]
+
             if isinstance(data, list):
                 # Validate with Pydantic
                 validated_data = []
@@ -235,6 +252,9 @@ class CandidateDataAgent:
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
+            if isinstance(data, dict):
+                data = [data]
+
             if isinstance(data, list):
                 validated_data = []
                 for item in data:
@@ -265,6 +285,9 @@ class CandidateDataAgent:
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
+            if isinstance(data, dict):
+                data = [data]
+
             if isinstance(data, list):
                 validated_data = []
                 for item in data:
@@ -295,6 +318,9 @@ class CandidateDataAgent:
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
+            if isinstance(data, dict):
+                data = [data]
+
             if isinstance(data, list):
                 validated_data = []
                 for item in data:
@@ -325,6 +351,9 @@ class CandidateDataAgent:
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
+            if isinstance(data, dict):
+                data = [data]
+
             if isinstance(data, list):
                 validated_data = []
                 for item in data:
@@ -355,6 +384,9 @@ class CandidateDataAgent:
                 return None
 
             data = self._extract_json_from_response(result.get("answer", ""))
+            if isinstance(data, dict):
+                data = [data]
+
             if isinstance(data, list):
                 validated_data = []
                 for item in data:

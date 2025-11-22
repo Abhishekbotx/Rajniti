@@ -32,8 +32,17 @@ from app.services.candidate_agent import CandidateDataAgent
 load_dotenv()
 
 # Setup logging
+log_dir = Path("logs")
+log_dir.mkdir(exist_ok=True)
+log_file = log_dir / "candidate_agent.log"
+
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(log_file)
+    ]
 )
 logger = logging.getLogger(__name__)
 

@@ -39,3 +39,5 @@ perplexityai
 Authlib==1.3.0
 Flask-Login==0.6.3
 PyJWT==2.8.0
+
+chromadb

@@ -33,8 +33,11 @@ def mock_candidate():
     candidate.name = "Test Candidate"
     candidate.constituency_id = "DL-1"
     candidate.education_background = None
+    candidate.political_background = None
     candidate.family_background = None
     candidate.assets = None
+    candidate.liabilities = None
+    candidate.crime_cases = None
     candidate.update = Mock()
     return candidate
 
@@ -43,7 +46,7 @@ def test_agent_initialization(mock_perplexity_service):
     """Test that the agent initializes correctly."""
     agent = CandidateDataAgent(perplexity_api_key="test-key")
     assert agent is not None
-    assert agent.perplexity is not None
+    assert agent.search_service is not None
 
 
 def test_create_data_query_education(agent, mock_candidate):
@@ -67,7 +70,7 @@ def test_create_data_query_family(agent, mock_candidate):
     query = agent._create_data_query(mock_candidate, "family")
     assert "Test Candidate" in query
     assert "family background" in query.lower()
-    assert "father" in query.lower()
+    assert "relation" in query.lower()
 
 
 def test_create_data_query_assets(agent, mock_candidate):
@@ -110,15 +113,15 @@ def test_fetch_education_background_success(
 ):
     """Test successful education background fetch."""
     mock_perplexity_service.search_india.return_value = {
-        "answer": '{"graduation_year": 2000, "stream": "Political Science", "college_or_school": "Delhi University"}',
+        "answer": '{"year": "2000", "stream": "Political Science", "college": "Delhi University"}',
         "error": None,
     }
 
     result = agent.fetch_education_background(mock_candidate)
 
     assert result is not None
-    assert result["graduation_year"] == 2000
-    assert result["stream"] == "Political Science"
+    assert result[0]["year"] == "2000"
+    assert result[0]["stream"] == "Political Science"
 
 
 def test_fetch_education_background_error(
@@ -139,15 +142,15 @@ def test_fetch_political_background_success(
 ):
     """Test successful political background fetch."""
     mock_perplexity_service.search_india.return_value = {
-        "answer": '{"elections": [{"election_year": 2019, "election_type": "MP", "status": "WON"}]}',
+        "answer": '[{"election_year": "2019", "party": "ABC", "result": "WON", "constituency": "Delhi"}]',
         "error": None,
     }
 
     result = agent.fetch_political_background(mock_candidate)
 
     assert result is not None
-    assert "elections" in result
-    assert len(result["elections"]) == 1
+    assert len(result) == 1
+    assert result[0]["party"] == "ABC"
 
 
 def test_fetch_family_background_success(
@@ -155,27 +158,27 @@ def test_fetch_family_background_success(
 ):
     """Test successful family background fetch."""
     mock_perplexity_service.search_india.return_value = {
-        "answer": '{"father": {"name": "Father Name", "profession": "Businessman"}}',
+        "answer": '[{"name": "Father Name", "profession": "Businessman", "relation": "Father"}]',
         "error": None,
     }
 
     result = agent.fetch_family_background(mock_candidate)
 
     assert result is not None
-    assert "father" in result
+    assert result[0]["relation"] == "Father"
 
 
 def test_fetch_assets_success(agent, mock_candidate, mock_perplexity_service):
     """Test successful assets fetch."""
     mock_perplexity_service.search_india.return_value = {
-        "answer": '{"commercial_assets": "2 shops", "cash_assets": "Rs. 50 lakhs"}',
+        "answer": '[{"type": "CASH", "amount": 5000000.0, "description": "Cash in hand", "owned_by": "SELF"}]',
         "error": None,
     }
 
     result = agent.fetch_assets(mock_candidate)
 
     assert result is not None
-    assert "commercial_assets" in result
+    assert result[0]["type"] == "CASH"
 
 
 def test_populate_candidate_data_all_fields(
@@ -185,12 +188,14 @@ def test_populate_candidate_data_all_fields(
     # Mock successful responses for all fields
     mock_perplexity_service.search_india.side_effect = [
         {
-            "answer": '{"graduation_year": 2000, "stream": "Political Science"}',
+            "answer": '{"year": "2000", "stream": "Political Science"}',
             "error": None,
         },
-        {"answer": '{"elections": [{"election_year": 2019}]}', "error": None},
-        {"answer": '{"father": {"name": "Test Father"}}', "error": None},
-        {"answer": '{"commercial_assets": "None"}', "error": None},
+        {"answer": '[{"election_year": "2019", "party": "BJP"}]', "error": None},
+        {"answer": '[{"name": "Test Father", "relation": "Father"}]', "error": None},
+        {"answer": '[{"type": "CASH", "amount": 0.0}]', "error": None},
+        {"answer": '[{"type": "LOAN", "amount": 0.0}]', "error": None},
+        {"answer": '[{"fir_no": "123", "charges_framed": false}]', "error": None},
     ]
 
     mock_session = Mock()
@@ -205,6 +210,8 @@ def test_populate_candidate_data_all_fields(
     assert status["political"] is True
     assert status["family"] is True
     assert status["assets"] is True
+    assert status["liabilities"] is True
+    assert status["crime_cases"] is True
 
     # Verify update was called
     mock_candidate.update.assert_called_once()
@@ -216,8 +223,10 @@ def test_populate_candidate_data_partial_fields(
     """Test populating only some candidate data fields."""
     # Mock successful response for education, failed for others
     mock_perplexity_service.search_india.side_effect = [
-        {"answer": '{"graduation_year": 2000}', "error": None},
+        {"answer": '{"year": "2000"}', "error": None},
         {"answer": "No data found", "error": None},  # No JSON
+        {"answer": "No data found", "error": None},
+        {"answer": "No data found", "error": None},
         {"answer": "No data found", "error": None},
         {"answer": "No data found", "error": None},
     ]
@@ -252,8 +261,8 @@ def test_populate_candidate_data_skip_existing(
     # Should mark as successful without fetching
     assert status["education"] is True
     # Should not call Perplexity for education (already exists)
-    # Only 3 calls for political, family, assets
-    assert mock_perplexity_service.search_india.call_count <= 3
+    # Only 5 calls for political, family, assets, liabilities, crime_cases
+    assert mock_perplexity_service.search_india.call_count <= 5
 
 
 def test_find_candidates_needing_data():
