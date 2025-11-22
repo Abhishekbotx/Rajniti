@@ -19,7 +19,7 @@ export default function ElectionPage() {
     const electionId = params.id as string
 
     const { election, loading, error } = useElection(electionId)
-    const { parties, loading: partiesLoading } = useParties(electionId)
+    const { parties } = useParties(electionId)
     const {
         candidates,
         loading: searchLoading,

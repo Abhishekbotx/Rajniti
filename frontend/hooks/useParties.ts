@@ -29,12 +29,20 @@ export function useParties(electionId: string | null) {
                 )
                 const data = await response.json()
                 if (data.success && data.data.parties) {
-                    const mappedParties = data.data.parties.slice(0, 10).map((p: any) => ({
-                        name: p.name,
-                        short_name: p.short_name,
-                        seats_won: p.seats_won,
-                        symbol: p.symbol
-                    }))
+                    interface PartyResponse {
+                        name: string
+                        short_name: string
+                        seats_won: number
+                        symbol: string
+                    }
+                    const mappedParties = data.data.parties
+                        .slice(0, 10)
+                        .map((p: PartyResponse) => ({
+                            name: p.name,
+                            short_name: p.short_name,
+                            seats_won: p.seats_won,
+                            symbol: p.symbol
+                        }))
                     setParties(mappedParties)
                     setError(null)
                 } else {
