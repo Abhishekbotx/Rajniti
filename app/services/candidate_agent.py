@@ -24,6 +24,7 @@ from app.schemas.candidate_data import (
     CrimeCaseDetails,
 )
 from app.services.perplexity_service import PerplexityService
+from app.services.vector_db_pipeline import VectorDBPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,12 @@ class CandidateDataAgent:
     3. Updates the database with the fetched information
     """
 
-    def __init__(self, search_service: Optional[Any] = None, perplexity_api_key: Optional[str] = None):
+    def __init__(
+        self, 
+        search_service: Optional[Any] = None, 
+        perplexity_api_key: Optional[str] = None,
+        enable_vector_db: bool = True
+    ):
         """
         Initialize the candidate data agent.
 
@@ -46,8 +52,21 @@ class CandidateDataAgent:
             search_service: Optional search service instance. If not provided,
                           PerplexityService will be used.
             perplexity_api_key: Optional Perplexity API key.
+            enable_vector_db: Whether to automatically sync to vector DB after populating data.
         """
         self.search_service = search_service or PerplexityService(api_key=perplexity_api_key)
+        self.enable_vector_db = enable_vector_db
+        self.vector_db_pipeline = None
+        
+        if enable_vector_db:
+            try:
+                self.vector_db_pipeline = VectorDBPipeline()
+                logger.info("Vector DB pipeline initialized for automatic sync")
+            except Exception as e:
+                logger.warning(f"Failed to initialize vector DB pipeline: {e}")
+                logger.warning("Continuing without vector DB sync")
+                self.enable_vector_db = False
+        
         logger.info("CandidateDataAgent initialized successfully")
 
     def find_candidates_needing_data(
@@ -463,6 +482,19 @@ class CandidateDataAgent:
                 logger.info(
                     f"✅ Successfully updated {candidate.name} with {len(update_data)} fields"
                 )
+                
+                # Sync to vector DB if enabled
+                if self.enable_vector_db and self.vector_db_pipeline:
+                    try:
+                        # Refresh candidate to get latest data
+                        session.refresh(candidate)
+                        if self.vector_db_pipeline.sync_candidate(candidate):
+                            logger.info(f"🔍 Synced {candidate.name} to vector database")
+                        else:
+                            logger.warning(f"⚠️  Failed to sync {candidate.name} to vector database")
+                    except Exception as ve:
+                        logger.warning(f"⚠️  Vector DB sync error for {candidate.name}: {ve}")
+                        
             except Exception as e:
                 session.rollback()
                 logger.error(f"❌ Failed to update candidate: {e}")

@@ -12,14 +12,19 @@ class VectorDBService:
     Designed to be fast and simple, using a local persistent directory.
     """
 
-    def __init__(self, collection_name: str = "candidates", persist_path: str = "data/chroma_db"):
+    def __init__(self, collection_name: str = "candidates", persist_path: str = None):
         """
         Initialize the VectorDBService.
 
         Args:
             collection_name: Name of the collection to use.
             persist_path: Path to the local directory for storing the database.
+                         If None, uses the default path from environment or 'data/chroma_db'.
         """
+        # Use environment variable or default path
+        if persist_path is None:
+            persist_path = os.getenv("CHROMA_DB_PATH", "data/chroma_db")
+        
         self.persist_path = persist_path
         self.collection_name = collection_name
         
@@ -105,4 +110,74 @@ class VectorDBService:
         except Exception as e:
             logger.error(f"Error peeking ChromaDB: {e}")
             return []
+
+    def upsert_candidate_data(self, candidate_id: str, text: str, metadata: Dict[str, Any]):
+        """
+        Insert or update candidate data in the vector database.
+
+        Args:
+            candidate_id: Unique identifier for the candidate
+            text: Text representation of candidate data for embedding
+            metadata: Metadata about the candidate (name, party, constituency, etc.)
+        """
+        try:
+            self.collection.upsert(
+                documents=[text],
+                metadatas=[metadata],
+                ids=[candidate_id]
+            )
+            logger.info(f"Upserted candidate {candidate_id} to ChromaDB")
+        except Exception as e:
+            logger.error(f"Error upserting candidate {candidate_id} to ChromaDB: {e}")
+            raise
+
+    def delete_candidate(self, candidate_id: str):
+        """
+        Delete a candidate from the vector database.
+
+        Args:
+            candidate_id: Unique identifier for the candidate
+        """
+        try:
+            self.collection.delete(ids=[candidate_id])
+            logger.info(f"Deleted candidate {candidate_id} from ChromaDB")
+        except Exception as e:
+            logger.error(f"Error deleting candidate {candidate_id} from ChromaDB: {e}")
+            raise
+
+    def get_candidate(self, candidate_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a candidate by ID.
+
+        Args:
+            candidate_id: Unique identifier for the candidate
+
+        Returns:
+            Dictionary with candidate document and metadata, or None if not found
+        """
+        try:
+            result = self.collection.get(ids=[candidate_id])
+            if result['ids']:
+                return {
+                    "id": result['ids'][0],
+                    "document": result['documents'][0] if result['documents'] else None,
+                    "metadata": result['metadatas'][0] if result['metadatas'] else {}
+                }
+            return None
+        except Exception as e:
+            logger.error(f"Error getting candidate {candidate_id} from ChromaDB: {e}")
+            return None
+
+    def count_candidates(self) -> int:
+        """
+        Get the total number of candidates in the collection.
+
+        Returns:
+            Number of candidates in the collection
+        """
+        try:
+            return self.collection.count()
+        except Exception as e:
+            logger.error(f"Error counting candidates in ChromaDB: {e}")
+            return 0
 

@@ -2,9 +2,13 @@
 Tests for the Candidate Data Population Agent.
 """
 
+import sys
 from unittest.mock import Mock, patch
-
 import pytest
+
+# Mock chromadb before any imports to avoid numpy compatibility issues in tests
+sys.modules['chromadb'] = Mock()
+sys.modules['chromadb.config'] = Mock()
 
 from app.database.models import Candidate
 from app.services.candidate_agent import CandidateDataAgent
@@ -22,7 +26,8 @@ def mock_perplexity_service():
 @pytest.fixture
 def agent(mock_perplexity_service):
     """Create a CandidateDataAgent instance for testing."""
-    return CandidateDataAgent(perplexity_api_key="test-key")
+    # Disable vector DB for tests to avoid initialization issues
+    return CandidateDataAgent(perplexity_api_key="test-key", enable_vector_db=False)
 
 
 @pytest.fixture
@@ -44,9 +49,10 @@ def mock_candidate():
 
 def test_agent_initialization(mock_perplexity_service):
     """Test that the agent initializes correctly."""
-    agent = CandidateDataAgent(perplexity_api_key="test-key")
+    agent = CandidateDataAgent(perplexity_api_key="test-key", enable_vector_db=False)
     assert agent is not None
     assert agent.search_service is not None
+    assert agent.enable_vector_db is False
 
 
 def test_create_data_query_education(agent, mock_candidate):
@@ -278,7 +284,7 @@ def test_find_candidates_needing_data():
     mock_filter.limit.return_value = mock_limit
     mock_limit.all.return_value = [Mock(spec=Candidate), Mock(spec=Candidate)]
 
-    agent = CandidateDataAgent(perplexity_api_key="test-key")
+    agent = CandidateDataAgent(perplexity_api_key="test-key", enable_vector_db=False)
 
     candidates = agent.find_candidates_needing_data(mock_session, limit=10)
 
@@ -298,7 +304,7 @@ def test_run_agent_no_candidates():
     mock_filter.limit.return_value = mock_limit
     mock_limit.all.return_value = []
 
-    agent = CandidateDataAgent(perplexity_api_key="test-key")
+    agent = CandidateDataAgent(perplexity_api_key="test-key", enable_vector_db=False)
 
     stats = agent.run(mock_session, batch_size=10)
 
