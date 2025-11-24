@@ -100,10 +100,9 @@ def update_user(user_id):
     
     Request body can include:
         - username (checked for uniqueness)
-        - political_interest
         - onboarding_completed (boolean)
-        - name, phone, state, city, age_group
-        - preferred_parties, topics_of_interest
+        - name, state, city, age_group, pincode
+        - political_ideology
     """
     try:
         data = request.get_json()
@@ -122,19 +121,13 @@ def update_user(user_id):
         # Prepare update data
         update_data = {}
         allowed_fields = [
-            'name', 'phone', 'state', 'city', 'age_group', 'profile_picture',
-            'username', 'political_interest', 'onboarding_completed'
+            'name', 'state', 'city', 'age_group', 'pincode', 'profile_picture',
+            'username', 'political_ideology', 'onboarding_completed'
         ]
         
         for key, value in data.items():
             if key in allowed_fields:
                 update_data[key] = value
-            elif key == 'preferred_parties' or key == 'topics_of_interest':
-                # Convert list to comma-separated string if needed
-                if isinstance(value, list):
-                    update_data[key] = ",".join(value) if value else None
-                else:
-                    update_data[key] = value
         
         # Update user
         updated_user = user_service.update_user_profile(user_id, **update_data)

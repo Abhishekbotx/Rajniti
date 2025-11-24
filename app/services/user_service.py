@@ -56,9 +56,6 @@ class UserService:
                 if name and user.name != name:
                     user.update(session, name=name)
             
-            # Update last login
-            user.update_last_login(session)
-            
             return user.to_dict()
 
     def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:

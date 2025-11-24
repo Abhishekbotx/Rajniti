@@ -136,47 +136,29 @@ class User(Base):
         self,
         session: Session,
         username: Optional[str] = None,
-        phone: Optional[str] = None,
         state: Optional[str] = None,
         city: Optional[str] = None,
         age_group: Optional[str] = None,
-        political_interest: Optional[str] = None,
-        preferred_parties: Optional[str] = None,
-        topics_of_interest: Optional[str] = None,
     ) -> "User":
         """
-        Complete user onboarding with basic details and political preferences.
+        Complete user onboarding with basic details.
 
         Args:
             session: Database session
             username: Unique username
-            phone: Phone number
             state: State of residence
             city: City of residence
             age_group: Age group
-            political_interest: Level of political interest
-            preferred_parties: Comma-separated list of preferred parties
-            topics_of_interest: Comma-separated list of topics of interest
 
         Returns:
             Updated user object
         """
         self.username = username
-        self.phone = phone
         self.state = state
         self.city = city
         self.age_group = age_group
-        self.political_interest = political_interest
-        self.preferred_parties = preferred_parties
-        self.topics_of_interest = topics_of_interest
         self.onboarding_completed = True
         self.updated_at = datetime.utcnow()
-        session.flush()
-        return self
-
-    def update_last_login(self, session: Session) -> "User":
-        """Update last login timestamp."""
-        self.last_login = datetime.utcnow()
         session.flush()
         return self
 
@@ -195,19 +177,15 @@ class User(Base):
         return {
             "id": self.id,
             "email": self.email,
-            "username": self.username,
             "name": self.name,
             "username": self.username,
             "profile_picture": self.profile_picture,
-            "phone": self.phone,
             "state": self.state,
             "city": self.city,
+            "pincode": self.pincode,
             "age_group": self.age_group,
-            "political_interest": self.political_interest,
-            "preferred_parties": self.preferred_parties.split(",") if self.preferred_parties else [],
-            "topics_of_interest": self.topics_of_interest.split(",") if self.topics_of_interest else [],
+            "political_ideology": self.political_ideology,
             "onboarding_completed": self.onboarding_completed,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "last_login": self.last_login.isoformat() if self.last_login else None,
         }

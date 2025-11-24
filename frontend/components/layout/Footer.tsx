@@ -3,7 +3,7 @@ import Link from "@/components/ui/Link"
 
 export default function Footer() {
     return (
-        <footer className='border-t border-gray-200 py-4'>
+        <footer className='border-t border-gray-200 py-2'>
             <div className='flex flex-row justify-between mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
                 <Text variant='small' className='text-gray-600'>
                     Built with ❤️ for 🇮🇳 Democracy

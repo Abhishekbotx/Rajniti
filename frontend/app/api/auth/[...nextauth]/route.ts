@@ -15,6 +15,7 @@ const authOptions: NextAuthOptions = {
             if (account && profile) {
                 token.accessToken = account.access_token
                 token.userId = profile.sub
+                console.log("profile", profile)
 
                 // Sync user with backend when they sign in
                 try {
@@ -22,6 +23,7 @@ const authOptions: NextAuthOptions = {
                         picture?: string
                         image?: string
                     }
+                    console.log("profileData", profileData)
                     // Use the userService helper
                     const data = await userService.syncUser({
                         id: profile.sub,
@@ -30,6 +32,7 @@ const authOptions: NextAuthOptions = {
                         profile_picture:
                             profileData.picture || profileData.image
                     })
+                    console.log("data", data)
 
                     // Store onboarding status in token
                     token.onboardingCompleted =

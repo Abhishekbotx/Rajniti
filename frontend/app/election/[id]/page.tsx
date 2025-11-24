@@ -257,15 +257,6 @@ export default function ElectionPage() {
                                 </div>
                             </div>
                         )}
-
-                        {searchQuery &&
-                            !searchLoading &&
-                            candidates.length === 0 && (
-                                <div className='mt-6 text-center text-gray-500'>
-                                    No candidates found for &quot;{searchQuery}
-                                    &quot;
-                                </div>
-                            )}
                     </div>
                 </div>
 

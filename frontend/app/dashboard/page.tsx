@@ -6,6 +6,7 @@ import { Footer, Navbar } from "@/components/layout"
 import Button from "@/components/ui/Button"
 import Text from "@/components/ui/Text"
 import Link from "next/link"
+import { getElectionName } from "@/utils/functions"
 
 export default function Dashboard() {
     const { loading: onboardingLoading } = useOnboardingCheck(true)
@@ -67,11 +68,15 @@ export default function Dashboard() {
 
             <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8'>
                 <div className='mb-8'>
-                    <Text variant='h2' weight='bold' className='text-gray-900 mb-2'>
+                    <Text
+                        variant='h2'
+                        weight='bold'
+                        className='text-gray-900 mb-2'>
                         Recent Elections
                     </Text>
                     <Text variant='body' className='text-gray-600'>
-                        Explore election data and candidates from recent Indian elections
+                        Explore election data and candidates from recent Indian
+                        elections
                     </Text>
                 </div>
 
@@ -92,7 +97,7 @@ export default function Dashboard() {
                                     variant='body'
                                     className='text-gray-600 mb-4'>
                                     Year: {election.year} | Type:{" "}
-                                    {election.type}
+                                    {getElectionName(election.type)}
                                 </Text>
 
                                 <div className='grid grid-cols-2 gap-3'>
@@ -163,9 +168,8 @@ export default function Dashboard() {
                         </Link>
                     ))}
                 </div>
-
-                <Footer />
             </div>
+            <Footer />
         </div>
     )
 }
