@@ -13,7 +13,9 @@ class VectorDBService:
     Designed to be fast and simple, using a local persistent directory.
     """
 
-    def __init__(self, collection_name: str = "candidates", persist_path: str = None):
+    def __init__(
+        self, collection_name: str = "candidates", persist_path: Optional[str] = None
+    ):
         """
         Initialize the VectorDBService.
 

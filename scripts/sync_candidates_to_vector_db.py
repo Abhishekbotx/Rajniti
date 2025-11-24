@@ -57,10 +57,10 @@ logger = logging.getLogger(__name__)
 
 def validate_environment():
     """Validate required environment variables are set."""
-    # DATABASE_URL is optional - if not set, script will warn
+    # DATABASE_URL is required for syncing
     if not os.getenv("DATABASE_URL"):
-        logger.warning("DATABASE_URL not set - make sure database is configured")
-        logger.warning("The sync requires a database connection to work")
+        logger.error("DATABASE_URL environment variable is required")
+        logger.error("Please set it in your .env file or environment")
         return False
 
     return True

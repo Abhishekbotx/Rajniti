@@ -512,8 +512,7 @@ class CandidateDataAgent:
                 # Sync to vector DB if enabled
                 if self.enable_vector_db and self.vector_db_pipeline:
                     try:
-                        # Refresh candidate to get latest data
-                        session.refresh(candidate)
+                        # No need to refresh - candidate already has latest data after commit
                         if self.vector_db_pipeline.sync_candidate(candidate):
                             logger.info(f"🔍 Synced {candidate.name} to vector database")
                         else:
