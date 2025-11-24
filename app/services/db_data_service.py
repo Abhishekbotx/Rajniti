@@ -171,8 +171,18 @@ class DbDataService(DataService):
         with get_db_session() as session:
             db_candidate = DbCandidate.get_by_id(session, candidate_id)
             if db_candidate:
-                return self._candidate_to_dict(db_candidate, session, election_id)
+                return self._candidate_to_dict(db_candidate, session, election_id, include_details=True)
             return None
+
+    def get_candidate_by_id_only(self, candidate_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific candidate without election_id (defaults to lok-sabha-2024)"""
+        with get_db_session() as session:
+            db_candidate = DbCandidate.get_by_id(session, candidate_id)
+            if not db_candidate:
+                return None
+            
+            election_id = "lok-sabha-2024"
+            return self._candidate_to_dict(db_candidate, session, election_id, include_details=True)
 
     def get_party_by_name(self, party_name: str, election_id: str) -> Optional[Dict[str, Any]]:
         """Get a specific party"""
@@ -287,7 +297,8 @@ class DbDataService(DataService):
     def _candidate_to_dict(
         self, candidate: DbCandidate, session, election_id: str, 
         party_cache: Optional[Dict[str, DbParty]] = None,
-        constituency_cache: Optional[Dict[str, DbConstituency]] = None
+        constituency_cache: Optional[Dict[str, DbConstituency]] = None,
+        include_details: bool = False
     ) -> Dict[str, Any]:
         """
         Convert database candidate to dictionary format with enriched data.
@@ -298,6 +309,7 @@ class DbDataService(DataService):
             election_id: Election ID
             party_cache: Optional cache of parties to avoid N+1 queries
             constituency_cache: Optional cache of constituencies to avoid N+1 queries
+            include_details: Whether to include detailed fields (education, political, etc.)
 
         Returns:
             Dictionary with candidate data including party and constituency details
@@ -320,7 +332,7 @@ class DbDataService(DataService):
         constituency_name = constituency.name if constituency else "Unknown"
         constituency_state_id = constituency.state_id if constituency else ""
 
-        return {
+        result = {
             "id": candidate.id,
             "name": candidate.name,
             "party_id": candidate.party_id,
@@ -336,3 +348,15 @@ class DbDataService(DataService):
             "image_url": candidate.image_url,
             "election_id": election_id,
         }
+
+        if include_details:
+            result.update({
+                "education_background": candidate.education_background,
+                "political_background": candidate.political_background,
+                "family_background": candidate.family_background,
+                "assets": candidate.assets,
+                "liabilities": candidate.liabilities,
+                "crime_cases": candidate.crime_cases,
+            })
+
+        return result

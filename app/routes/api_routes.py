@@ -91,6 +91,20 @@ def get_candidates_by_election(election_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@api_bp.route("/candidates/<candidate_id>", methods=["GET"])
+def get_candidate_by_id(candidate_id):
+    """Get candidate details by ID (without needing election_id)"""
+    try:
+        candidate = candidate_controller.get_candidate_by_id_only(candidate_id)
+
+        if not candidate:
+            return jsonify({"success": False, "error": "Candidate not found"}), 404
+
+        return jsonify({"success": True, "data": candidate})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @api_bp.route("/elections/<election_id>/candidates/<candidate_id>", methods=["GET"])
 def get_candidate(election_id, candidate_id):
     """Get candidate details"""

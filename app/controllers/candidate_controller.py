@@ -69,6 +69,11 @@ class CandidateController:
         candidate = self.data_service.get_candidate_by_id(candidate_id, election_id)
         return candidate
 
+    def get_candidate_by_id_only(self, candidate_id: str) -> Optional[Dict[str, Any]]:
+        """Get specific candidate details without election_id"""
+        candidate = self.data_service.get_candidate_by_id_only(candidate_id)
+        return candidate
+
     def get_candidates_by_party(
         self, party_name: str, election_id: Optional[str] = None
     ) -> Dict[str, Any]:
