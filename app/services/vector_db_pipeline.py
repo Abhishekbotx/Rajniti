@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class VectorDBPipeline:
     """
     Pipeline for syncing candidate data from the database to ChromaDB.
-    
+
     This pipeline:
     1. Fetches candidates from the database
     2. Converts candidate information to searchable text format
@@ -31,10 +31,12 @@ class VectorDBPipeline:
         Initialize the VectorDB pipeline.
 
         Args:
-            vector_db_service: Optional VectorDBService instance. 
+            vector_db_service: Optional VectorDBService instance.
                              If not provided, a new instance will be created.
         """
-        self.vector_db = vector_db_service or VectorDBService(collection_name="candidates")
+        self.vector_db = vector_db_service or VectorDBService(
+            collection_name="candidates"
+        )
         logger.info("VectorDBPipeline initialized successfully")
 
     def _candidate_to_text(self, candidate: Candidate) -> str:
@@ -68,7 +70,7 @@ class VectorDBPipeline:
                 if edu.get("college"):
                     edu_parts.append(f"from {edu['college']}")
                 if edu.get("other_details"):
-                    edu_parts.append(edu['other_details'])
+                    edu_parts.append(edu["other_details"])
                 if edu_parts:
                     edu_text.append(" ".join(edu_parts))
             if edu_text:
@@ -100,7 +102,7 @@ class VectorDBPipeline:
             for fam in candidate.family_background:
                 fam_parts = []
                 if fam.get("name"):
-                    fam_parts.append(fam['name'])
+                    fam_parts.append(fam["name"])
                 if fam.get("relation"):
                     fam_parts.append(f"({fam['relation']})")
                 if fam.get("profession"):
@@ -113,7 +115,9 @@ class VectorDBPipeline:
         # Add assets summary
         if candidate.assets:
             total_assets = sum(asset.get("amount", 0) for asset in candidate.assets)
-            asset_types = set(asset.get("type") for asset in candidate.assets if asset.get("type"))
+            asset_types = set(
+                asset.get("type") for asset in candidate.assets if asset.get("type")
+            )
             if total_assets > 0 or asset_types:
                 asset_parts = []
                 if total_assets > 0:
@@ -124,14 +128,18 @@ class VectorDBPipeline:
 
         # Add liabilities summary
         if candidate.liabilities:
-            total_liabilities = sum(liability.get("amount", 0) for liability in candidate.liabilities)
+            total_liabilities = sum(
+                liability.get("amount", 0) for liability in candidate.liabilities
+            )
             if total_liabilities > 0:
                 text_parts.append(f"Liabilities: Total ₹{total_liabilities:,.2f}")
 
         # Add crime cases info
         if candidate.crime_cases:
             crime_count = len(candidate.crime_cases)
-            charges_framed = sum(1 for case in candidate.crime_cases if case.get("charges_framed"))
+            charges_framed = sum(
+                1 for case in candidate.crime_cases if case.get("charges_framed")
+            )
             crime_parts = [f"{crime_count} criminal case(s)"]
             if charges_framed > 0:
                 crime_parts.append(f"{charges_framed} with charges framed")
@@ -190,13 +198,13 @@ class VectorDBPipeline:
         try:
             text = self._candidate_to_text(candidate)
             metadata = self._candidate_to_metadata(candidate)
-            
+
             self.vector_db.upsert_candidate_data(
-                candidate_id=candidate.id,
-                text=text,
-                metadata=metadata
+                candidate_id=candidate.id, text=text, metadata=metadata
             )
-            logger.info(f"Successfully synced candidate {candidate.name} (ID: {candidate.id})")
+            logger.info(
+                f"Successfully synced candidate {candidate.name} (ID: {candidate.id})"
+            )
             return True
         except Exception as e:
             logger.error(f"Failed to sync candidate {candidate.id}: {e}")
@@ -207,7 +215,7 @@ class VectorDBPipeline:
         session: Session,
         batch_size: int = 100,
         offset: int = 0,
-        filter_criteria: Optional[Dict[str, Any]] = None
+        filter_criteria: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, int]:
         """
         Sync a batch of candidates to the vector database.
@@ -222,10 +230,10 @@ class VectorDBPipeline:
             Statistics dictionary with 'total', 'synced', 'failed'
         """
         logger.info(f"Starting batch sync: batch_size={batch_size}, offset={offset}")
-        
+
         # Build query
         query = session.query(Candidate)
-        
+
         # Apply filters if provided
         if filter_criteria:
             if filter_criteria.get("status"):
@@ -234,22 +242,18 @@ class VectorDBPipeline:
                 query = query.filter(Candidate.state_id == filter_criteria["state_id"])
             if filter_criteria.get("type"):
                 query = query.filter(Candidate.type == filter_criteria["type"])
-        
+
         # Get candidates
         candidates = query.offset(offset).limit(batch_size).all()
-        
-        stats = {
-            "total": len(candidates),
-            "synced": 0,
-            "failed": 0
-        }
-        
+
+        stats = {"total": len(candidates), "synced": 0, "failed": 0}
+
         for candidate in candidates:
             if self.sync_candidate(candidate):
                 stats["synced"] += 1
             else:
                 stats["failed"] += 1
-        
+
         logger.info(f"Batch sync completed: {stats}")
         return stats
 
@@ -257,7 +261,7 @@ class VectorDBPipeline:
         self,
         session: Session,
         batch_size: int = 100,
-        filter_criteria: Optional[Dict[str, Any]] = None
+        filter_criteria: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, int]:
         """
         Sync all candidates to the vector database in batches.
@@ -271,35 +275,32 @@ class VectorDBPipeline:
             Overall statistics dictionary
         """
         logger.info("Starting full sync of all candidates to vector database")
-        
-        overall_stats = {
-            "total": 0,
-            "synced": 0,
-            "failed": 0,
-            "batches": 0
-        }
-        
+
+        overall_stats = {"total": 0, "synced": 0, "failed": 0, "batches": 0}
+
         offset = 0
         while True:
             batch_stats = self.sync_candidates_batch(
                 session,
                 batch_size=batch_size,
                 offset=offset,
-                filter_criteria=filter_criteria
+                filter_criteria=filter_criteria,
             )
-            
+
             if batch_stats["total"] == 0:
                 break
-            
+
             overall_stats["total"] += batch_stats["total"]
             overall_stats["synced"] += batch_stats["synced"]
             overall_stats["failed"] += batch_stats["failed"]
             overall_stats["batches"] += 1
-            
+
             offset += batch_size
-            
-            logger.info(f"Progress: {overall_stats['synced']}/{overall_stats['total']} candidates synced")
-        
+
+            logger.info(
+                f"Progress: {overall_stats['synced']}/{overall_stats['total']} candidates synced"
+            )
+
         logger.info(f"Full sync completed: {overall_stats}")
         return overall_stats
 

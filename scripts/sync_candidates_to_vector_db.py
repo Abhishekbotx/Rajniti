@@ -50,10 +50,7 @@ log_file = log_dir / "vector_db_sync.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(log_file)
-    ]
+    handlers=[logging.StreamHandler(), logging.FileHandler(log_file)],
 )
 logger = logging.getLogger(__name__)
 
@@ -137,18 +134,21 @@ def main():
             if args.dry_run:
                 logger.info("DRY RUN MODE - No data will be synced")
                 logger.info("")
-                
+
                 # Count candidates that would be synced
                 from app.database.models import Candidate
+
                 query = session.query(Candidate)
-                
+
                 if filter_criteria.get("status"):
                     query = query.filter(Candidate.status == filter_criteria["status"])
                 if filter_criteria.get("state_id"):
-                    query = query.filter(Candidate.state_id == filter_criteria["state_id"])
+                    query = query.filter(
+                        Candidate.state_id == filter_criteria["state_id"]
+                    )
                 if filter_criteria.get("type"):
                     query = query.filter(Candidate.type == filter_criteria["type"])
-                
+
                 count = query.count()
                 logger.info(f"Would sync {count} candidates based on filters")
                 logger.info("")
@@ -156,7 +156,7 @@ def main():
                 stats = pipeline.sync_all_candidates(
                     session=session,
                     batch_size=args.batch_size,
-                    filter_criteria=filter_criteria if filter_criteria else None
+                    filter_criteria=filter_criteria if filter_criteria else None,
                 )
 
                 logger.info("")
@@ -169,7 +169,7 @@ def main():
                 logger.info("=" * 60)
                 logger.info("")
                 logger.info("Vector database is now ready for semantic search!")
-                
+
                 # Show current vector DB stats
                 total_in_db = pipeline.vector_db.count_candidates()
                 logger.info(f"Total candidates in vector database: {total_in_db}")
