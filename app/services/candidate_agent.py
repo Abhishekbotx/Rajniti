@@ -24,6 +24,7 @@ from app.schemas.candidate_data import (
     CrimeCaseDetails,
 )
 from app.services.perplexity_service import PerplexityService
+from app.services.vector_db_pipeline import VectorDBPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,12 @@ class CandidateDataAgent:
     3. Updates the database with the fetched information
     """
 
-    def __init__(self, search_service: Optional[Any] = None, perplexity_api_key: Optional[str] = None):
+    def __init__(
+        self,
+        search_service: Optional[Any] = None,
+        perplexity_api_key: Optional[str] = None,
+        enable_vector_db: bool = True,
+    ):
         """
         Initialize the candidate data agent.
 
@@ -46,8 +52,23 @@ class CandidateDataAgent:
             search_service: Optional search service instance. If not provided,
                           PerplexityService will be used.
             perplexity_api_key: Optional Perplexity API key.
+            enable_vector_db: Whether to automatically sync to vector DB after populating data.
         """
-        self.search_service = search_service or PerplexityService(api_key=perplexity_api_key)
+        self.search_service = search_service or PerplexityService(
+            api_key=perplexity_api_key
+        )
+        self.enable_vector_db = enable_vector_db
+        self.vector_db_pipeline = None
+
+        if enable_vector_db:
+            try:
+                self.vector_db_pipeline = VectorDBPipeline()
+                logger.info("Vector DB pipeline initialized for automatic sync")
+            except Exception as e:
+                logger.warning(f"Failed to initialize vector DB pipeline: {e}")
+                logger.warning("Continuing without vector DB sync")
+                self.enable_vector_db = False
+
         logger.info("CandidateDataAgent initialized successfully")
 
     def find_candidates_needing_data(
@@ -126,8 +147,10 @@ class CandidateDataAgent:
             base_info += f" from constituency {candidate.constituency_id}"
 
         # We use MyNeta as a reference but do not include source text in the final stored data.
-        source_instruction = "Search for this information using reliable sources like MyNeta.info."
-        
+        source_instruction = (
+            "Search for this information using reliable sources like MyNeta.info."
+        )
+
         common_instruction = (
             f"{source_instruction} "
             "If the information is not available, return an empty list []. "
@@ -177,9 +200,7 @@ class CandidateDataAgent:
 
         return queries.get(data_type, "")
 
-    def _extract_json_from_response(
-        self, response_text: str
-    ) -> Optional[Any]:
+    def _extract_json_from_response(self, response_text: str) -> Optional[Any]:
         """
         Extract JSON data from Perplexity response.
 
@@ -194,7 +215,7 @@ class CandidateDataAgent:
             match = re.search(r"```(?:json)?\s*(.*?)```", response_text, re.DOTALL)
             if match:
                 response_text = match.group(1)
-            
+
             # Strip whitespace
             response_text = response_text.strip()
 
@@ -208,16 +229,16 @@ class CandidateDataAgent:
             # Try to find JSON in the response
             start_idx_list = response_text.find("[")
             end_idx_list = response_text.rfind("]")
-            
+
             start_idx_dict = response_text.find("{")
             end_idx_dict = response_text.rfind("}")
 
             if start_idx_list != -1 and end_idx_list != -1:
-                 # If [ is before {, it's likely a list at root.
-                 if start_idx_dict == -1 or start_idx_list < start_idx_dict:
-                     json_str = response_text[start_idx_list : end_idx_list + 1]
-                     return json.loads(json_str)
-            
+                # If [ is before {, it's likely a list at root.
+                if start_idx_dict == -1 or start_idx_list < start_idx_dict:
+                    json_str = response_text[start_idx_list : end_idx_list + 1]
+                    return json.loads(json_str)
+
             if start_idx_dict != -1 and end_idx_dict != -1:
                 json_str = response_text[start_idx_dict : end_idx_dict + 1]
                 return json.loads(json_str)
@@ -226,7 +247,7 @@ class CandidateDataAgent:
         except Exception as e:
             logger.warning(f"Failed to parse JSON from response: {e}")
             # Log the raw response for debugging
-            logger.debug(f"Raw response: {response_text[:200]}...") 
+            logger.debug(f"Raw response: {response_text[:200]}...")
             return None
 
     def fetch_education_background(
@@ -237,7 +258,7 @@ class CandidateDataAgent:
         try:
             query = self._create_data_query(candidate, "education")
             result = self.search_service.search_india(query)
-            
+
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
@@ -253,10 +274,14 @@ class CandidateDataAgent:
                     try:
                         validated_data.append(EducationDetails(**item).dict())
                     except ValidationError as ve:
-                        logger.warning(f"Skipping invalid education data for {candidate.name}: {ve}")
-                
+                        logger.warning(
+                            f"Skipping invalid education data for {candidate.name}: {ve}"
+                        )
+
                 if validated_data:
-                    logger.info(f"✅ Education data found for {candidate.name} ({len(validated_data)} records)")
+                    logger.info(
+                        f"✅ Education data found for {candidate.name} ({len(validated_data)} records)"
+                    )
                     return validated_data
             return None
         except Exception as e:
@@ -271,7 +296,7 @@ class CandidateDataAgent:
         try:
             query = self._create_data_query(candidate, "political")
             result = self.search_service.search_india(query)
-            
+
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
@@ -286,10 +311,14 @@ class CandidateDataAgent:
                     try:
                         validated_data.append(PoliticalHistory(**item).dict())
                     except ValidationError as ve:
-                         logger.warning(f"Skipping invalid political data for {candidate.name}: {ve}")
+                        logger.warning(
+                            f"Skipping invalid political data for {candidate.name}: {ve}"
+                        )
 
                 if validated_data:
-                    logger.info(f"✅ Political history found for {candidate.name} ({len(validated_data)} records)")
+                    logger.info(
+                        f"✅ Political history found for {candidate.name} ({len(validated_data)} records)"
+                    )
                     return validated_data
             return None
         except Exception as e:
@@ -304,7 +333,7 @@ class CandidateDataAgent:
         try:
             query = self._create_data_query(candidate, "family")
             result = self.search_service.search_india(query)
-            
+
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
@@ -319,25 +348,27 @@ class CandidateDataAgent:
                     try:
                         validated_data.append(FamilyMember(**item).dict())
                     except ValidationError as ve:
-                        logger.warning(f"Skipping invalid family data for {candidate.name}: {ve}")
+                        logger.warning(
+                            f"Skipping invalid family data for {candidate.name}: {ve}"
+                        )
 
                 if validated_data:
-                    logger.info(f"✅ Family data found for {candidate.name} ({len(validated_data)} records)")
+                    logger.info(
+                        f"✅ Family data found for {candidate.name} ({len(validated_data)} records)"
+                    )
                     return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching family background: {e}")
             return None
 
-    def fetch_assets(
-        self, candidate: Candidate
-    ) -> Optional[List[Dict[str, Any]]]:
+    def fetch_assets(self, candidate: Candidate) -> Optional[List[Dict[str, Any]]]:
         """Fetch assets."""
         logger.info(f"Fetching assets information for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "assets")
             result = self.search_service.search_india(query)
-            
+
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
@@ -352,25 +383,27 @@ class CandidateDataAgent:
                     try:
                         validated_data.append(AssetDetails(**item).dict())
                     except ValidationError as ve:
-                         logger.warning(f"Skipping invalid asset data for {candidate.name}: {ve}")
+                        logger.warning(
+                            f"Skipping invalid asset data for {candidate.name}: {ve}"
+                        )
 
                 if validated_data:
-                    logger.info(f"✅ Assets information found for {candidate.name} ({len(validated_data)} records)")
+                    logger.info(
+                        f"✅ Assets information found for {candidate.name} ({len(validated_data)} records)"
+                    )
                     return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching assets: {e}")
             return None
 
-    def fetch_liabilities(
-        self, candidate: Candidate
-    ) -> Optional[List[Dict[str, Any]]]:
+    def fetch_liabilities(self, candidate: Candidate) -> Optional[List[Dict[str, Any]]]:
         """Fetch liabilities."""
         logger.info(f"Fetching liabilities information for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "liabilities")
             result = self.search_service.search_india(query)
-            
+
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
@@ -385,25 +418,27 @@ class CandidateDataAgent:
                     try:
                         validated_data.append(LiabilityDetails(**item).dict())
                     except ValidationError as ve:
-                         logger.warning(f"Skipping invalid liability data for {candidate.name}: {ve}")
+                        logger.warning(
+                            f"Skipping invalid liability data for {candidate.name}: {ve}"
+                        )
 
                 if validated_data:
-                    logger.info(f"✅ Liabilities information found for {candidate.name} ({len(validated_data)} records)")
+                    logger.info(
+                        f"✅ Liabilities information found for {candidate.name} ({len(validated_data)} records)"
+                    )
                     return validated_data
             return None
         except Exception as e:
             logger.error(f"Error fetching liabilities: {e}")
             return None
 
-    def fetch_crime_cases(
-        self, candidate: Candidate
-    ) -> Optional[List[Dict[str, Any]]]:
+    def fetch_crime_cases(self, candidate: Candidate) -> Optional[List[Dict[str, Any]]]:
         """Fetch crime cases."""
         logger.info(f"Fetching crime cases for {candidate.name}")
         try:
             query = self._create_data_query(candidate, "crime_cases")
             result = self.search_service.search_india(query)
-            
+
             if result.get("error"):
                 logger.error(f"Perplexity error: {result['error']}")
                 return None
@@ -418,10 +453,14 @@ class CandidateDataAgent:
                     try:
                         validated_data.append(CrimeCaseDetails(**item).dict())
                     except ValidationError as ve:
-                         logger.warning(f"Skipping invalid crime case data for {candidate.name}: {ve}")
+                        logger.warning(
+                            f"Skipping invalid crime case data for {candidate.name}: {ve}"
+                        )
 
                 if validated_data:
-                    logger.info(f"✅ Crime cases found for {candidate.name} ({len(validated_data)} records)")
+                    logger.info(
+                        f"✅ Crime cases found for {candidate.name} ({len(validated_data)} records)"
+                    )
                     return validated_data
             return None
         except Exception as e:
@@ -470,11 +509,17 @@ class CandidateDataAgent:
                     status[status_key] = True
                 time.sleep(delay_between_requests)
             else:
-                logger.info(f"⏭️  {status_key.capitalize()} data already exists for {candidate.name}")
+                logger.info(
+                    f"⏭️  {status_key.capitalize()} data already exists for {candidate.name}"
+                )
                 status[status_key] = True
 
-        fetch_and_update("education_background", self.fetch_education_background, "education")
-        fetch_and_update("political_background", self.fetch_political_background, "political")
+        fetch_and_update(
+            "education_background", self.fetch_education_background, "education"
+        )
+        fetch_and_update(
+            "political_background", self.fetch_political_background, "political"
+        )
         fetch_and_update("family_background", self.fetch_family_background, "family")
         fetch_and_update("assets", self.fetch_assets, "assets")
         fetch_and_update("liabilities", self.fetch_liabilities, "liabilities")
@@ -488,6 +533,22 @@ class CandidateDataAgent:
                 logger.info(
                     f"✅ Successfully updated {candidate.name} with {len(update_data)} fields"
                 )
+
+                # Sync to vector DB if enabled
+                if self.enable_vector_db and self.vector_db_pipeline:
+                    try:
+                        # No need to refresh - candidate already has latest data after commit
+                        if self.vector_db_pipeline.sync_candidate(candidate):
+                            logger.info(f"🔍 Synced {candidate.name} to vector database")
+                        else:
+                            logger.warning(
+                                f"⚠️  Failed to sync {candidate.name} to vector database"
+                            )
+                    except Exception as ve:
+                        logger.warning(
+                            f"⚠️  Vector DB sync error for {candidate.name}: {ve}"
+                        )
+
             except Exception as e:
                 session.rollback()
                 logger.error(f"❌ Failed to update candidate: {e}")

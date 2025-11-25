@@ -96,6 +96,11 @@ def main():
         action="store_true",
         help="Run in dry-run mode (no database updates)",
     )
+    parser.add_argument(
+        "--disable-vector-db",
+        action="store_true",
+        help="Disable automatic sync to vector database",
+    )
 
     args = parser.parse_args()
 
@@ -109,12 +114,13 @@ def main():
     logger.info(f"Delay between candidates: {args.delay_between_candidates}s")
     logger.info(f"Delay between requests: {args.delay_between_requests}s")
     logger.info(f"Dry run: {args.dry_run}")
+    logger.info(f"Vector DB sync: {'Disabled' if args.disable_vector_db else 'Enabled'}")
     logger.info("=" * 60)
     logger.info("")
 
     try:
         # Initialize agent
-        agent = CandidateDataAgent()
+        agent = CandidateDataAgent(enable_vector_db=not args.disable_vector_db)
 
         # Run agent with database session
         with get_db_session() as session:

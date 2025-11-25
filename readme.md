@@ -33,9 +33,9 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 | 🚀 **Simple Flask API**     | Clean RESTful endpoints serving JSON data                 |
 | 💾 **Database Support**     | PostgreSQL/Supabase support with easy migration           |
 | 🤖 **AI-Powered Agent**     | Automated candidate data population using Perplexity AI   |
+| 🔍 **Vector Search**        | ChromaDB-powered semantic search for candidates           |
 | 🌐 **Landing Page**         | Beautiful Next.js landing page with India-themed design   |
 | 📊 **Election Data**        | 50,000+ records across Lok Sabha & Assembly elections     |
-| 🔍 **Search & Filter**      | Basic search and filtering capabilities                   |
 | 🕸️ **Intelligent Scraping** | Advanced scraping system with retry logic & rate limiting |
 | 📸 **Image Downloads**      | Candidate photos and party symbols extraction             |
 | ⚡ **Lightweight**          | Minimal dependencies, fast startup                        |
@@ -1211,6 +1211,86 @@ Topics covered:
 -   Best practices
 -   Troubleshooting
 -   Performance tuning
+
+---
+
+## 🔍 **Vector Database & Semantic Search**
+
+Rajniti includes ChromaDB integration for semantic search across candidate information. This enables natural language queries to find candidates based on education, political history, assets, and more.
+
+### **🚀 Quick Start**
+
+#### **Automatic Sync**
+
+Vector database automatically syncs when the candidate agent populates data:
+
+```bash
+# Auto-syncs to vector DB during data population
+python scripts/run_candidate_agent.py --batch-size 10
+```
+
+#### **Manual Sync**
+
+Use the sync script for periodic updates:
+
+```bash
+# Sync all candidates
+python scripts/sync_candidates_to_vector_db.py
+
+# Sync only winners
+python scripts/sync_candidates_to_vector_db.py --winners-only
+
+# Sync specific state
+python scripts/sync_candidates_to_vector_db.py --state DL
+```
+
+### **✨ Features**
+
+-   **Semantic Search**: Find candidates using natural language queries
+-   **Auto-Sync**: Automatic synchronization after data population
+-   **Batch Processing**: Efficient batch syncing with configurable size
+-   **Filtering**: Sync by status, state, or candidate type
+-   **Metadata**: Rich metadata for filtering and retrieval
+
+### **💻 Programmatic Usage**
+
+```python
+from app.services.vector_db_service import VectorDBService
+
+# Initialize service
+vector_db = VectorDBService(collection_name="candidates")
+
+# Query for similar candidates
+results = vector_db.query_similar(
+    "politician from Delhi with business background",
+    n_results=5
+)
+
+for result in results:
+    print(f"{result['metadata']['name']} - {result['distance']}")
+```
+
+### **⚙️ Configuration**
+
+```bash
+# Set ChromaDB storage path (optional)
+export CHROMA_DB_PATH="data/chroma_db"
+
+# Required for sync operations
+export DATABASE_URL="postgresql://user:password@localhost:5432/rajniti"
+```
+
+### **📖 Documentation**
+
+For detailed documentation, see [docs/VECTOR_DB.md](docs/VECTOR_DB.md)
+
+Topics covered:
+-   Architecture and components
+-   Data storage format
+-   Usage examples
+-   Performance considerations
+-   Monitoring and maintenance
+-   Troubleshooting
 
 ---
 
