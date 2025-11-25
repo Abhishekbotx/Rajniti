@@ -10,6 +10,14 @@ This directory contains the ChromaDB vector database used for semantic search ac
   - Collection information
   - Index data for fast similarity search
 
+- **`<uuid-folder>/`**: HNSW (Hierarchical Navigable Small World) index storage:
+  - `data_level0.bin`: Vector data for the index
+  - `link_lists.bin`: Graph connections for similarity search
+  - `header.bin`: Index metadata
+  - `length.bin`: Index dimensions
+  - The UUID folder name is the collection/index identifier
+  - These binary files enable fast approximate nearest neighbor search
+
 ## Storage Format
 
 ChromaDB uses **SQLite** as its persistent storage backend. This is the standard and expected behavior:
@@ -43,7 +51,11 @@ sqlite3 chroma_db/chroma.sqlite3
 
 ### Resetting the Database
 
-To start fresh, simply delete the `chroma.sqlite3` file. It will be recreated on the next run.
+To start fresh, delete both:
+- The `chroma.sqlite3` file
+- Any UUID-named folders (HNSW index directories)
+
+They will be recreated on the next run.
 
 ### Note on Version Control
 

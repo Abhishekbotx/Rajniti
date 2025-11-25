@@ -275,7 +275,7 @@ class CandidateDataAgent:
                         validated_data.append(EducationDetails(**item).dict())
                     except ValidationError as ve:
                         logger.warning(
-                            f"Skipping invalid education data for {candidate.name}: {ve}"
+                            f"Skipping invalid education data for {candidate.name} - {item}: {ve}"
                         )
 
                 if validated_data:
@@ -312,7 +312,7 @@ class CandidateDataAgent:
                         validated_data.append(PoliticalHistory(**item).dict())
                     except ValidationError as ve:
                         logger.warning(
-                            f"Skipping invalid political data for {candidate.name}: {ve}"
+                            f"Skipping invalid political data for {candidate.name} - {item}: {ve}"
                         )
 
                 if validated_data:
@@ -349,7 +349,7 @@ class CandidateDataAgent:
                         validated_data.append(FamilyMember(**item).dict())
                     except ValidationError as ve:
                         logger.warning(
-                            f"Skipping invalid family data for {candidate.name}: {ve}"
+                            f"Skipping invalid family data for {candidate.name} - {item}: {ve}"
                         )
 
                 if validated_data:
@@ -384,7 +384,7 @@ class CandidateDataAgent:
                         validated_data.append(AssetDetails(**item).dict())
                     except ValidationError as ve:
                         logger.warning(
-                            f"Skipping invalid asset data for {candidate.name}: {ve}"
+                            f"Skipping invalid asset data for {candidate.name} - {item}: {ve}"
                         )
 
                 if validated_data:
@@ -419,7 +419,7 @@ class CandidateDataAgent:
                         validated_data.append(LiabilityDetails(**item).dict())
                     except ValidationError as ve:
                         logger.warning(
-                            f"Skipping invalid liability data for {candidate.name}: {ve}"
+                            f"Skipping invalid liability data for {candidate.name} - {item}: {ve}"
                         )
 
                 if validated_data:
@@ -454,7 +454,7 @@ class CandidateDataAgent:
                         validated_data.append(CrimeCaseDetails(**item).dict())
                     except ValidationError as ve:
                         logger.warning(
-                            f"Skipping invalid crime case data for {candidate.name}: {ve}"
+                            f"Skipping invalid crime case data for {candidate.name} - {item}: {ve}"
                         )
 
                 if validated_data:
