@@ -11,22 +11,25 @@ The vector database integration enables semantic search across candidate informa
 ### Components
 
 1. **VectorDBService** (`app/services/vector_db_service.py`)
-   - Low-level interface to ChromaDB
-   - Handles CRUD operations for candidate embeddings
-   - Manages persistent storage
+
+    - Low-level interface to ChromaDB
+    - Handles CRUD operations for candidate embeddings
+    - Manages persistent storage
 
 2. **VectorDBPipeline** (`app/services/vector_db_pipeline.py`)
-   - Orchestrates candidate data ingestion
-   - Converts candidate data to searchable text
-   - Provides batch and full sync operations
+
+    - Orchestrates candidate data ingestion
+    - Converts candidate data to searchable text
+    - Provides batch and full sync operations
 
 3. **CandidateDataAgent Integration** (`app/services/candidate_agent.py`)
-   - Automatically syncs candidates to vector DB after populating data
-   - Optional - can be disabled via `enable_vector_db=False`
+
+    - Automatically syncs candidates to vector DB after populating data
+    - Optional - can be disabled via `enable_vector_db=False`
 
 4. **Sync Script** (`scripts/sync_candidates_to_vector_db.py`)
-   - CLI tool for manual/periodic syncing
-   - Supports filtering and batch processing
+    - CLI tool for manual/periodic syncing
+    - Supports filtering and batch processing
 
 ## Usage
 
@@ -79,8 +82,33 @@ with get_db_session() as session:
 
 ### Environment Variables
 
-- `CHROMA_DB_PATH`: Path to ChromaDB storage directory (default: `data/chroma_db`)
-- `DATABASE_URL`: PostgreSQL connection string (required for sync operations)
+-   `CHROMA_DB_PATH`: Path to ChromaDB storage directory (default: `data/chroma_db`)
+-   `DATABASE_URL`: PostgreSQL connection string (required for sync operations)
+
+## Storage Format
+
+### SQLite Backend
+
+ChromaDB uses **SQLite** as its default persistent storage backend. This is the standard and expected behavior:
+
+-   **Storage Location**: `chroma_db/chroma.sqlite3` (or path specified by `CHROMA_DB_PATH`)
+-   **File Format**: SQLite database (`.sqlite3` file)
+-   **Why SQLite?**: ChromaDB uses SQLite for reliable, ACID-compliant local persistence
+-   **No `.chroma` format**: ChromaDB doesn't have its own proprietary file format - SQLite is the standard
+
+This is normal and expected. The SQLite file contains:
+
+-   Vector embeddings
+-   Document metadata
+-   Collection information
+-   Index data
+
+You can inspect the database using any SQLite tool:
+
+```bash
+sqlite3 chroma_db/chroma.sqlite3
+.tables
+```
 
 ## Testing
 
