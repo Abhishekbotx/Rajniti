@@ -8,6 +8,7 @@ Clean Flask routes following MVC pattern:
 - Services handle data access
 """
 
+import logging
 from flask import Blueprint, jsonify, request
 
 from app.controllers import (
@@ -16,6 +17,8 @@ from app.controllers import (
     ElectionController,
     PartyController,
 )
+
+logger = logging.getLogger(__name__)
 
 # Create blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
@@ -305,6 +308,8 @@ def api_root():
                 "elections": "/api/v1/elections",
                 "candidates": "/api/v1/candidates/search?q=<query>",
                 "parties": "/api/v1/parties",
+                "questions": "/api/v1/questions",
+                "ask_question": "/api/v1/questions/ask",
                 "health": "/api/v1/health",
             },
         }
@@ -329,3 +334,113 @@ def health_check():
             },
         }
     )
+
+
+# ==================== QUESTIONS ROUTES ====================
+
+
+# Lazy initialization for questions service
+_questions_service = None
+
+
+def get_questions_service():
+    """Lazy initialization of QuestionsService to avoid import errors."""
+    global _questions_service
+    if _questions_service is None:
+        try:
+            from app.services.questions_service import QuestionsService
+
+            _questions_service = QuestionsService()
+        except Exception as e:
+            logger.warning(f"Failed to initialize QuestionsService: {e}")
+            return None
+    return _questions_service
+
+
+@api_bp.route("/questions", methods=["GET"])
+def get_predefined_questions():
+    """Get top 5 predefined questions based on candidate model."""
+    try:
+        from app.services.questions_service import PREDEFINED_QUESTIONS
+
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "questions": PREDEFINED_QUESTIONS,
+                    "total": len(PREDEFINED_QUESTIONS),
+                },
+            }
+        )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route("/questions/ask", methods=["POST"])
+def ask_question():
+    """Ask a question and get answers from the vector database."""
+    try:
+        data = request.get_json()
+
+        if not data or not data.get("question"):
+            return (
+                jsonify({"success": False, "error": "Question is required"}),
+                400,
+            )
+
+        question = data.get("question")
+        candidate_id = data.get("candidate_id")
+        n_results = data.get("n_results", 5)
+
+        questions_service = get_questions_service()
+        if not questions_service:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Questions service not available. Vector DB may not be configured.",
+                    }
+                ),
+                503,
+            )
+
+        result = questions_service.answer_question(
+            question=question, candidate_id=candidate_id, n_results=n_results
+        )
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in ask_question: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route("/questions/<question_id>/answer", methods=["GET"])
+def answer_predefined_question(question_id):
+    """Answer a predefined question by its ID."""
+    try:
+        candidate_id = request.args.get("candidate_id")
+        n_results = request.args.get("n_results", default=5, type=int)
+
+        questions_service = get_questions_service()
+        if not questions_service:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Questions service not available. Vector DB may not be configured.",
+                    }
+                ),
+                503,
+            )
+
+        result = questions_service.answer_predefined_question(
+            question_id=question_id, candidate_id=candidate_id, n_results=n_results
+        )
+
+        if not result.get("success"):
+            return jsonify(result), 404
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in answer_predefined_question: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500

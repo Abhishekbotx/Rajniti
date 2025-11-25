@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button"
 import Text from "@/components/ui/Text"
 import Image from "@/components/ui/Image"
 import Link from "next/link"
+import TopQuestions from "@/components/TopQuestions"
 
 export default function ElectionPage() {
     const { loading: onboardingLoading } = useOnboardingCheck(true)
@@ -258,6 +259,11 @@ export default function ElectionPage() {
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Top Questions Section */}
+                <div className='mb-8'>
+                    <TopQuestions />
                 </div>
 
                 {parties.length > 0 && (
