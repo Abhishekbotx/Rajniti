@@ -10,10 +10,8 @@ import pytest
 sys.modules['chromadb'] = MagicMock()
 sys.modules['chromadb.config'] = MagicMock()
 
-from app.services.questions_service import (
-    QuestionsService,
-    PREDEFINED_QUESTIONS,
-)
+from app.schemas.questions import PREDEFINED_QUESTIONS
+from app.services.questions_service import QuestionsService
 
 
 @pytest.fixture

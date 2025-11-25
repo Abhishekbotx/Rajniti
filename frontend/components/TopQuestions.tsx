@@ -144,7 +144,8 @@ export default function TopQuestions({ candidateId }: TopQuestionsProps) {
                                     <Text
                                         variant='small'
                                         weight='semibold'
-                                        className='text-gray-800 line-clamp-2'>
+                                        className='text-gray-800 overflow-hidden'
+                                        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                                         {q.question}
                                     </Text>
                                     <Text
