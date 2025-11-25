@@ -63,24 +63,49 @@ class CandidateDataAgent:
         Returns:
             List of Candidate objects that need data population
         """
+        from sqlalchemy import or_, cast, Text
+        
         logger.info(f"Finding candidates needing data (limit: {limit})")
 
-        # Query candidates where at least one detailed field is null
+        # Query candidates where at least one detailed field is null or empty
+        # We need to check both NULL and empty JSON arrays []
+        def is_null_or_empty(field):
+            """Check if a JSON field is NULL or an empty array/object"""
+            return or_(
+                field.is_(None),
+                cast(field, Text) == '[]',
+                cast(field, Text) == '{}',
+                cast(field, Text) == 'null'
+            )
+        
         candidates = (
             session.query(Candidate)
             .filter(
-                (Candidate.education_background.is_(None))
-                | (Candidate.political_background.is_(None))
-                | (Candidate.family_background.is_(None))
-                | (Candidate.assets.is_(None))
-                | (Candidate.liabilities.is_(None))
-                | (Candidate.crime_cases.is_(None))
+                or_(
+                    is_null_or_empty(Candidate.education_background),
+                    is_null_or_empty(Candidate.political_background),
+                    is_null_or_empty(Candidate.family_background),
+                    is_null_or_empty(Candidate.assets),
+                    is_null_or_empty(Candidate.liabilities),
+                    is_null_or_empty(Candidate.crime_cases)
+                )
             )
             .limit(limit)
             .all()
         )
 
         logger.info(f"Found {len(candidates)} candidates needing data")
+        
+        # Log diagnostic info about what fields are missing
+        if candidates and len(candidates) > 0:
+            logger.debug(f"Sample candidate: {candidates[0].name}")
+            logger.debug(f"  - education_background: {candidates[0].education_background}")
+            logger.debug(f"  - political_background: {candidates[0].political_background}")
+            logger.debug(f"  - family_background: {candidates[0].family_background}")
+            logger.debug(f"  - assets: {candidates[0].assets}")
+            logger.debug(f"  - liabilities: {candidates[0].liabilities}")
+            logger.debug(f"  - crime_cases: {candidates[0].crime_cases}")
+        
         return candidates
 
     def _create_data_query(self, candidate: Candidate, data_type: str) -> str:

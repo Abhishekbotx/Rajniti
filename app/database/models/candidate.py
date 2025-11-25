@@ -3,9 +3,10 @@ Candidate database model with CRUD operations.
 """
 
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import Column
+from sqlalchemy import Column, DateTime
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -49,6 +50,10 @@ class Candidate(Base):
     assets = Column(JSON, nullable=True)
     liabilities = Column(JSON, nullable=True)
     crime_cases = Column(JSON, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     def __repr__(self) -> str:
         return f"<Candidate(id={self.id}, name={self.name}, party_id={self.party_id})>"
@@ -243,6 +248,10 @@ class Candidate(Base):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+        
+        # Explicitly update the updated_at timestamp
+        self.updated_at = datetime.utcnow()
+        
         session.flush()
         return self
 
@@ -362,6 +371,7 @@ class Candidate(Base):
                 "assets": stmt.excluded.assets,
                 "liabilities": stmt.excluded.liabilities,
                 "crime_cases": stmt.excluded.crime_cases,
+                "updated_at": datetime.utcnow(),  # Update timestamp on conflict
             },
         )
 
