@@ -10,8 +10,10 @@ from typing import Any, Dict, List, Optional
 
 from perplexity import Perplexity
 
+from app.services.llm_service import LLMService
 
-class PerplexityService:
+
+class PerplexityService(LLMService):
     """Service for interacting with Perplexity AI API for search"""
 
     def __init__(self, api_key: Optional[str] = None):
@@ -123,7 +125,7 @@ class PerplexityService:
 
         return self.search(query, location=location)
 
-    def search_multiple_queries(
+    def batch_search(
         self, queries: List[str], location: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
@@ -142,3 +144,11 @@ class PerplexityService:
             results.append(result)
 
         return results
+
+    def search_multiple_queries(
+        self, queries: List[str], location: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Legacy method - use batch_search instead.
+        """
+        return self.batch_search(queries, location)

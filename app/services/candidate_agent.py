@@ -1,8 +1,11 @@
 """
-Candidate Data Population Agent
+Optimized Candidate Data Population Agent
 
-This agent automatically populates detailed candidate information using Perplexity AI.
-It finds candidates with missing data, fetches the information, and updates the database.
+This is an optimized version of the candidate agent that:
+1. Uses batch queries to combine multiple API calls into one
+2. Implements caching to avoid redundant calls
+3. Supports multiple LLM providers (Perplexity, OpenAI, Anthropic)
+4. Only fetches missing data fields
 """
 
 import json
@@ -23,40 +26,50 @@ from app.schemas.candidate_data import (
     LiabilityDetails,
     CrimeCaseDetails,
 )
-from app.services.perplexity_service import PerplexityService
+from app.services.llm_service import get_llm_service
+from app.services.llm_cache import get_cache
 from app.services.vector_db_pipeline import VectorDBPipeline
 
 logger = logging.getLogger(__name__)
 
 
-class CandidateDataAgent:
+class CandidateAgent:
     """
-    Agent for populating candidate detailed information using Perplexity AI.
+    Optimized agent for populating candidate detailed information.
 
-    This agent:
-    1. Finds candidates with missing detailed information
-    2. Uses Perplexity AI to fetch the data in a structured format
-    3. Updates the database with the fetched information
+    Key optimizations:
+    - Batch queries: Combines multiple data requests into single API call
+    - Caching: Avoids redundant API calls for similar queries
+    - Multi-provider support: Can use Perplexity, OpenAI, or Anthropic
+    - Smart fetching: Only fetches missing fields
     """
 
     def __init__(
         self,
-        search_service: Optional[Any] = None,
-        perplexity_api_key: Optional[str] = None,
+        llm_provider: Optional[str] = None,
+        enable_cache: bool = True,
+        cache_ttl_hours: int = 24,
         enable_vector_db: bool = True,
     ):
         """
-        Initialize the candidate data agent.
+        Initialize the optimized candidate data agent.
 
         Args:
-            search_service: Optional search service instance. If not provided,
-                          PerplexityService will be used.
-            perplexity_api_key: Optional Perplexity API key.
-            enable_vector_db: Whether to automatically sync to vector DB after populating data.
+            llm_provider: LLM provider name ('perplexity', 'openai', 'anthropic').
+                         If None, reads from LLM_PROVIDER env var
+            enable_cache: Whether to enable response caching
+            cache_ttl_hours: Cache TTL in hours
+            enable_vector_db: Whether to automatically sync to vector DB
         """
-        self.search_service = search_service or PerplexityService(
-            api_key=perplexity_api_key
-        )
+        # Initialize LLM service
+        self.search_service = get_llm_service(provider=llm_provider)
+        logger.info(f"Using LLM provider: {llm_provider or 'default'}")
+
+        # Initialize cache
+        self.cache = get_cache(ttl_hours=cache_ttl_hours) if enable_cache else None
+        if enable_cache:
+            logger.info(f"Response caching enabled (TTL: {cache_ttl_hours} hours)")
+
         self.enable_vector_db = enable_vector_db
         self.vector_db_pipeline = None
 
@@ -69,7 +82,7 @@ class CandidateDataAgent:
                 logger.warning("Continuing without vector DB sync")
                 self.enable_vector_db = False
 
-        logger.info("CandidateDataAgent initialized successfully")
+        logger.info("CandidateAgent initialized successfully")
 
     def find_candidates_needing_data(
         self, session: Session, limit: int = 100
@@ -85,20 +98,18 @@ class CandidateDataAgent:
             List of Candidate objects that need data population
         """
         from sqlalchemy import or_, cast, Text
-        
+
         logger.info(f"Finding candidates needing data (limit: {limit})")
 
-        # Query candidates where at least one detailed field is null or empty
-        # We need to check both NULL and empty JSON arrays []
         def is_null_or_empty(field):
             """Check if a JSON field is NULL or an empty array/object"""
             return or_(
                 field.is_(None),
-                cast(field, Text) == '[]',
-                cast(field, Text) == '{}',
-                cast(field, Text) == 'null'
+                cast(field, Text) == "[]",
+                cast(field, Text) == "{}",
+                cast(field, Text) == "null",
             )
-        
+
         candidates = (
             session.query(Candidate)
             .filter(
@@ -108,7 +119,7 @@ class CandidateDataAgent:
                     is_null_or_empty(Candidate.family_background),
                     is_null_or_empty(Candidate.assets),
                     is_null_or_empty(Candidate.liabilities),
-                    is_null_or_empty(Candidate.crime_cases)
+                    is_null_or_empty(Candidate.crime_cases),
                 )
             )
             .limit(limit)
@@ -116,107 +127,76 @@ class CandidateDataAgent:
         )
 
         logger.info(f"Found {len(candidates)} candidates needing data")
-        
-        # Log diagnostic info about what fields are missing
-        if candidates and len(candidates) > 0:
-            logger.debug(f"Sample candidate: {candidates[0].name}")
-            logger.debug(f"  - education_background: {candidates[0].education_background}")
-            logger.debug(f"  - political_background: {candidates[0].political_background}")
-            logger.debug(f"  - family_background: {candidates[0].family_background}")
-            logger.debug(f"  - assets: {candidates[0].assets}")
-            logger.debug(f"  - liabilities: {candidates[0].liabilities}")
-            logger.debug(f"  - crime_cases: {candidates[0].crime_cases}")
-        
         return candidates
 
-    def _create_data_query(self, candidate: Candidate, data_type: str) -> str:
+    def _create_batch_query(
+        self, candidate: Candidate, data_types: List[str]
+    ) -> str:
         """
-        Create a Perplexity query to fetch specific candidate data.
+        Create a single batch query for multiple data types.
+
+        This is the KEY OPTIMIZATION: Instead of 6 separate API calls,
+        we combine them into one.
 
         Args:
             candidate: Candidate object
-            data_type: Type of data to fetch (education, political, family, assets, liabilities, crime)
+            data_types: List of data types to fetch (e.g., ['education', 'political'])
 
         Returns:
-            Formatted query string
+            Combined query string
         """
         base_info = f"{candidate.name}"
-
-        # Add constituency info if available
         if candidate.constituency_id:
             base_info += f" from constituency {candidate.constituency_id}"
 
-        # We use MyNeta as a reference but do not include source text in the final stored data.
-        source_instruction = (
-            "Search for this information using reliable sources like MyNeta.info."
-        )
-
-        common_instruction = (
-            f"{source_instruction} "
-            "If the information is not available, return an empty list []. "
-            "Return ONLY the raw JSON object, no markdown formatting, no code blocks, no other text. "
-            "Do not include any source citations, links, or 'According to...' phrases in the values. "
-            "Ensure valid JSON format."
-        )
-
-        queries = {
-            "education": (
-                f"What is the education background of Indian politician {base_info}? "
-                f"Provide a list of educational qualifications with year, college, stream, and other details. "
-                f"{common_instruction} "
-                f"Format: [{{'year': '...', 'college': '...', 'stream': '...', 'other_details': '...'}}]"
-            ),
-            "political": (
-                f"What is the political history of Indian politician {base_info}? "
-                f"List all elections contested with party, constituency, election_year, position (MP/MLA), and result (WON/LOST). "
-                f"{common_instruction} "
-                f"Format: [{{'party': '...', 'constituency': '...', 'election_year': '...', 'position': '...', 'result': 'WON/LOST'}}]"
-            ),
-            "family": (
-                f"What is the family background of Indian politician {base_info}? "
-                f"Provide information about family members including name, profession, relation, and age. "
-                f"{common_instruction} "
-                f"Format: [{{'name': '...', 'profession': '...', 'relation': '...', 'age': '...'}}]"
-            ),
-            "assets": (
-                f"What are the declared assets of Indian politician {base_info}? "
-                f"List assets with type (CASH/BOND/LAND/EQUITY/AUTOMOBILE/JEWELRY/OTHER), amount, description, and owned_by (SELF/SPOUSE/DEPENDENT/HUF/OTHER). "
-                f"{common_instruction} "
-                f"Format: [{{'type': '...', 'amount': 1000.0, 'description': '...', 'owned_by': '...'}}]"
-            ),
-            "liabilities": (
-                f"What are the declared liabilities of Indian politician {base_info}? "
-                f"List liabilities with type (LOAN/OTHER), amount, description, and owned_by (SELF/SPOUSE/DEPENDENT/HUF/OTHER). "
-                f"{common_instruction} "
-                f"Format: [{{'type': '...', 'amount': 1000.0, 'description': '...', 'owned_by': '...'}}]"
-            ),
-            "crime_cases": (
-                f"What are the criminal cases against Indian politician {base_info}? "
-                f"List cases with FIR No, Police Station, Sections Applied (as list), Charges Framed (boolean), and description. "
-                f"{common_instruction} "
-                f"Format: [{{'fir_no': '...', 'police_station': '...', 'sections_applied': ['...'], 'charges_framed': true/false, 'description': '...'}}]"
-            ),
+        query_parts = []
+        formats = {
+            "education": "[{'year': '...', 'college': '...', 'stream': '...', 'other_details': '...'}]",
+            "political": "[{'party': '...', 'constituency': '...', 'election_year': '...', 'position': '...', 'result': 'WON/LOST'}]",
+            "family": "[{'name': '...', 'profession': '...', 'relation': '...', 'age': '...'}]",
+            "assets": "[{'type': '...', 'amount': 1000.0, 'description': '...', 'owned_by': '...'}]",
+            "liabilities": "[{'type': '...', 'amount': 1000.0, 'description': '...', 'owned_by': '...'}]",
+            "crime_cases": "[{'fir_no': '...', 'police_station': '...', 'sections_applied': ['...'], 'charges_framed': true/false, 'description': '...'}]",
         }
 
-        return queries.get(data_type, "")
+        descriptions = {
+            "education": "education background with year, college, stream, and other details",
+            "political": "political history with all elections contested (party, constituency, election_year, position, result)",
+            "family": "family background with family members (name, profession, relation, age)",
+            "assets": "declared assets (type: CASH/BOND/LAND/EQUITY/AUTOMOBILE/JEWELRY/OTHER, amount, description, owned_by)",
+            "liabilities": "declared liabilities (type: LOAN/OTHER, amount, description, owned_by)",
+            "crime_cases": "criminal cases (FIR No, Police Station, Sections Applied, Charges Framed, description)",
+        }
+
+        for data_type in data_types:
+            desc = descriptions.get(data_type, "")
+            fmt = formats.get(data_type, "")
+            query_parts.append(
+                f"{data_type.capitalize()}: {desc}. Format: {fmt}"
+            )
+
+        combined_query = (
+            f"Provide the following information about Indian politician {base_info}:\n\n"
+            + "\n".join(f"{i+1}. {part}" for i, part in enumerate(query_parts))
+            + "\n\n"
+            "Search for this information using reliable sources like MyNeta.info. "
+            "If information is not available for any section, return an empty list [] for that section. "
+            "Return ONLY valid JSON objects, no markdown formatting, no code blocks, no other text. "
+            "Do not include source citations or 'According to...' phrases in the values. "
+            "Format the response as a JSON object with keys matching the data types above, "
+            "each containing an array of objects."
+        )
+
+        return combined_query
 
     def _extract_json_from_response(self, response_text: str) -> Optional[Any]:
-        """
-        Extract JSON data from Perplexity response.
-
-        Args:
-            response_text: Raw response text from Perplexity
-
-        Returns:
-            Parsed JSON object or None if extraction fails
-        """
+        """Extract JSON data from LLM response."""
         try:
             # Remove markdown code blocks if present
             match = re.search(r"```(?:json)?\s*(.*?)```", response_text, re.DOTALL)
             if match:
                 response_text = match.group(1)
 
-            # Strip whitespace
             response_text = response_text.strip()
 
             # Try to parse directly
@@ -226,15 +206,12 @@ class CandidateDataAgent:
                 pass
 
             # Fallback: find array or object
-            # Try to find JSON in the response
             start_idx_list = response_text.find("[")
             end_idx_list = response_text.rfind("]")
-
             start_idx_dict = response_text.find("{")
             end_idx_dict = response_text.rfind("}")
 
             if start_idx_list != -1 and end_idx_list != -1:
-                # If [ is before {, it's likely a list at root.
                 if start_idx_dict == -1 or start_idx_list < start_idx_dict:
                     json_str = response_text[start_idx_list : end_idx_list + 1]
                     return json.loads(json_str)
@@ -246,240 +223,121 @@ class CandidateDataAgent:
             return None
         except Exception as e:
             logger.warning(f"Failed to parse JSON from response: {e}")
-            # Log the raw response for debugging
             logger.debug(f"Raw response: {response_text[:200]}...")
             return None
 
-    def fetch_education_background(
-        self, candidate: Candidate
+    def _fetch_batch_data(
+        self, candidate: Candidate, data_types: List[str]
+    ) -> Dict[str, Optional[List[Dict[str, Any]]]]:
+        """
+        Fetch multiple data types in a single API call.
+
+        This is the main optimization - reduces 6 API calls to 1.
+
+        Args:
+            candidate: Candidate object
+            data_types: List of data types to fetch
+
+        Returns:
+            Dict mapping data_type to extracted data (or None if failed)
+        """
+        query = self._create_batch_query(candidate, data_types)
+
+        # Check cache first
+        if self.cache:
+            cached = self.cache.get(query)
+            if cached:
+                logger.info(f"Using cached response for {candidate.name}")
+                response_text = cached.get("answer", "")
+            else:
+                result = self.search_service.search_india(query)
+                if result.get("error"):
+                    logger.error(f"LLM error: {result['error']}")
+                    return {dt: None for dt in data_types}
+                response_text = result.get("answer", "")
+                # Cache the response
+                self.cache.set(query, result)
+        else:
+            result = self.search_service.search_india(query)
+            if result.get("error"):
+                logger.error(f"LLM error: {result['error']}")
+                return {dt: None for dt in data_types}
+            response_text = result.get("answer", "")
+
+        # Parse the combined response
+        parsed = self._extract_json_from_response(response_text)
+
+        results = {}
+        for data_type in data_types:
+            if isinstance(parsed, dict):
+                # Response is a dict with keys matching data_types
+                data = parsed.get(data_type, [])
+            elif isinstance(parsed, list) and len(parsed) == len(data_types):
+                # Response is a list in the same order as data_types
+                idx = data_types.index(data_type)
+                data = parsed[idx] if idx < len(parsed) else []
+            else:
+                # Fallback: try to extract from text
+                data = None
+
+            if data is None or (isinstance(data, list) and len(data) == 0):
+                results[data_type] = None
+            else:
+                if isinstance(data, dict):
+                    data = [data]
+                results[data_type] = data
+
+        return results
+
+    def _validate_and_format_data(
+        self,
+        data_type: str,
+        data: List[Dict[str, Any]],
+        candidate_name: str,
     ) -> Optional[List[Dict[str, Any]]]:
-        """Fetch education background."""
-        logger.info(f"Fetching education background for {candidate.name}")
-        try:
-            query = self._create_data_query(candidate, "education")
-            result = self.search_service.search_india(query)
+        """Validate and format data using Pydantic schemas."""
+        schemas = {
+            "education": EducationDetails,
+            "political": PoliticalHistory,
+            "family": FamilyMember,
+            "assets": AssetDetails,
+            "liabilities": LiabilityDetails,
+            "crime_cases": CrimeCaseDetails,
+        }
 
-            if result.get("error"):
-                logger.error(f"Perplexity error: {result['error']}")
-                return None
-
-            data = self._extract_json_from_response(result.get("answer", ""))
-            if isinstance(data, dict):
-                data = [data]
-
-            if isinstance(data, list):
-                # Validate with Pydantic
-                validated_data = []
-                for item in data:
-                    try:
-                        validated_data.append(EducationDetails(**item).dict())
-                    except ValidationError as ve:
-                        logger.warning(
-                            f"Skipping invalid education data for {candidate.name} - {item}: {ve}"
-                        )
-
-                if validated_data:
-                    logger.info(
-                        f"✅ Education data found for {candidate.name} ({len(validated_data)} records)"
-                    )
-                    return validated_data
-            return None
-        except Exception as e:
-            logger.error(f"Error fetching education background: {e}")
+        schema = schemas.get(data_type)
+        if not schema:
             return None
 
-    def fetch_political_background(
-        self, candidate: Candidate
-    ) -> Optional[List[Dict[str, Any]]]:
-        """Fetch political background."""
-        logger.info(f"Fetching political background for {candidate.name}")
-        try:
-            query = self._create_data_query(candidate, "political")
-            result = self.search_service.search_india(query)
+        validated_data = []
+        for item in data:
+            try:
+                validated_data.append(schema(**item).dict())
+            except ValidationError as ve:
+                logger.warning(
+                    f"Skipping invalid {data_type} data for {candidate_name} - {item}: {ve}"
+                )
 
-            if result.get("error"):
-                logger.error(f"Perplexity error: {result['error']}")
-                return None
-
-            data = self._extract_json_from_response(result.get("answer", ""))
-            if isinstance(data, dict):
-                data = [data]
-
-            if isinstance(data, list):
-                validated_data = []
-                for item in data:
-                    try:
-                        validated_data.append(PoliticalHistory(**item).dict())
-                    except ValidationError as ve:
-                        logger.warning(
-                            f"Skipping invalid political data for {candidate.name} - {item}: {ve}"
-                        )
-
-                if validated_data:
-                    logger.info(
-                        f"✅ Political history found for {candidate.name} ({len(validated_data)} records)"
-                    )
-                    return validated_data
-            return None
-        except Exception as e:
-            logger.error(f"Error fetching political background: {e}")
-            return None
-
-    def fetch_family_background(
-        self, candidate: Candidate
-    ) -> Optional[List[Dict[str, Any]]]:
-        """Fetch family background."""
-        logger.info(f"Fetching family background for {candidate.name}")
-        try:
-            query = self._create_data_query(candidate, "family")
-            result = self.search_service.search_india(query)
-
-            if result.get("error"):
-                logger.error(f"Perplexity error: {result['error']}")
-                return None
-
-            data = self._extract_json_from_response(result.get("answer", ""))
-            if isinstance(data, dict):
-                data = [data]
-
-            if isinstance(data, list):
-                validated_data = []
-                for item in data:
-                    try:
-                        validated_data.append(FamilyMember(**item).dict())
-                    except ValidationError as ve:
-                        logger.warning(
-                            f"Skipping invalid family data for {candidate.name} - {item}: {ve}"
-                        )
-
-                if validated_data:
-                    logger.info(
-                        f"✅ Family data found for {candidate.name} ({len(validated_data)} records)"
-                    )
-                    return validated_data
-            return None
-        except Exception as e:
-            logger.error(f"Error fetching family background: {e}")
-            return None
-
-    def fetch_assets(self, candidate: Candidate) -> Optional[List[Dict[str, Any]]]:
-        """Fetch assets."""
-        logger.info(f"Fetching assets information for {candidate.name}")
-        try:
-            query = self._create_data_query(candidate, "assets")
-            result = self.search_service.search_india(query)
-
-            if result.get("error"):
-                logger.error(f"Perplexity error: {result['error']}")
-                return None
-
-            data = self._extract_json_from_response(result.get("answer", ""))
-            if isinstance(data, dict):
-                data = [data]
-
-            if isinstance(data, list):
-                validated_data = []
-                for item in data:
-                    try:
-                        validated_data.append(AssetDetails(**item).dict())
-                    except ValidationError as ve:
-                        logger.warning(
-                            f"Skipping invalid asset data for {candidate.name} - {item}: {ve}"
-                        )
-
-                if validated_data:
-                    logger.info(
-                        f"✅ Assets information found for {candidate.name} ({len(validated_data)} records)"
-                    )
-                    return validated_data
-            return None
-        except Exception as e:
-            logger.error(f"Error fetching assets: {e}")
-            return None
-
-    def fetch_liabilities(self, candidate: Candidate) -> Optional[List[Dict[str, Any]]]:
-        """Fetch liabilities."""
-        logger.info(f"Fetching liabilities information for {candidate.name}")
-        try:
-            query = self._create_data_query(candidate, "liabilities")
-            result = self.search_service.search_india(query)
-
-            if result.get("error"):
-                logger.error(f"Perplexity error: {result['error']}")
-                return None
-
-            data = self._extract_json_from_response(result.get("answer", ""))
-            if isinstance(data, dict):
-                data = [data]
-
-            if isinstance(data, list):
-                validated_data = []
-                for item in data:
-                    try:
-                        validated_data.append(LiabilityDetails(**item).dict())
-                    except ValidationError as ve:
-                        logger.warning(
-                            f"Skipping invalid liability data for {candidate.name} - {item}: {ve}"
-                        )
-
-                if validated_data:
-                    logger.info(
-                        f"✅ Liabilities information found for {candidate.name} ({len(validated_data)} records)"
-                    )
-                    return validated_data
-            return None
-        except Exception as e:
-            logger.error(f"Error fetching liabilities: {e}")
-            return None
-
-    def fetch_crime_cases(self, candidate: Candidate) -> Optional[List[Dict[str, Any]]]:
-        """Fetch crime cases."""
-        logger.info(f"Fetching crime cases for {candidate.name}")
-        try:
-            query = self._create_data_query(candidate, "crime_cases")
-            result = self.search_service.search_india(query)
-
-            if result.get("error"):
-                logger.error(f"Perplexity error: {result['error']}")
-                return None
-
-            data = self._extract_json_from_response(result.get("answer", ""))
-            if isinstance(data, dict):
-                data = [data]
-
-            if isinstance(data, list):
-                validated_data = []
-                for item in data:
-                    try:
-                        validated_data.append(CrimeCaseDetails(**item).dict())
-                    except ValidationError as ve:
-                        logger.warning(
-                            f"Skipping invalid crime case data for {candidate.name} - {item}: {ve}"
-                        )
-
-                if validated_data:
-                    logger.info(
-                        f"✅ Crime cases found for {candidate.name} ({len(validated_data)} records)"
-                    )
-                    return validated_data
-            return None
-        except Exception as e:
-            logger.error(f"Error fetching crime cases: {e}")
-            return None
+        if validated_data:
+            logger.info(
+                f"✅ {data_type.capitalize()} data found for {candidate_name} ({len(validated_data)} records)"
+            )
+            return validated_data
+        return None
 
     def populate_candidate_data(
         self,
         session: Session,
         candidate: Candidate,
-        delay_between_requests: float = 2.0,
+        delay_between_requests: float = 1.0,  # Reduced delay since we batch
     ) -> Dict[str, bool]:
         """
-        Populate all missing data fields for a candidate.
+        Populate all missing data fields for a candidate using batch queries.
 
         Args:
             session: Database session
             candidate: Candidate object to populate
-            delay_between_requests: Delay in seconds between API requests
+            delay_between_requests: Delay in seconds (minimal since we batch)
 
         Returns:
             Dictionary with status of each field update
@@ -497,33 +355,51 @@ class CandidateDataAgent:
             "crime_cases": False,
         }
 
-        update_data = {}
+        # Determine which fields need to be fetched
+        fields_to_fetch = []
+        field_mapping = {
+            "education": "education_background",
+            "political": "political_background",
+            "family": "family_background",
+            "assets": "assets",
+            "liabilities": "liabilities",
+            "crime_cases": "crime_cases",
+        }
 
-        # Helper to fetch and update
-        def fetch_and_update(field_name, fetch_method, status_key):
+        for data_type, field_name in field_mapping.items():
             if getattr(candidate, field_name) is None:
-                data = fetch_method(candidate)
-                # Strict validation: reject empty lists if not explicit
-                if data is not None:
-                    update_data[field_name] = data
-                    status[status_key] = True
-                time.sleep(delay_between_requests)
+                fields_to_fetch.append(data_type)
             else:
                 logger.info(
-                    f"⏭️  {status_key.capitalize()} data already exists for {candidate.name}"
+                    f"⏭️  {data_type.capitalize()} data already exists for {candidate.name}"
                 )
-                status[status_key] = True
+                status[data_type] = True
 
-        fetch_and_update(
-            "education_background", self.fetch_education_background, "education"
+        if not fields_to_fetch:
+            logger.info(f"✅ All data already exists for {candidate.name}")
+            return status
+
+        # Fetch all missing fields in a single batch query
+        logger.info(
+            f"Fetching {len(fields_to_fetch)} data types in batch: {', '.join(fields_to_fetch)}"
         )
-        fetch_and_update(
-            "political_background", self.fetch_political_background, "political"
-        )
-        fetch_and_update("family_background", self.fetch_family_background, "family")
-        fetch_and_update("assets", self.fetch_assets, "assets")
-        fetch_and_update("liabilities", self.fetch_liabilities, "liabilities")
-        fetch_and_update("crime_cases", self.fetch_crime_cases, "crime_cases")
+        batch_results = self._fetch_batch_data(candidate, fields_to_fetch)
+
+        # Validate and format each result
+        update_data = {}
+        for data_type in fields_to_fetch:
+            data = batch_results.get(data_type)
+            if data:
+                validated = self._validate_and_format_data(
+                    data_type, data, candidate.name
+                )
+                if validated:
+                    field_name = field_mapping[data_type]
+                    update_data[field_name] = validated
+                    status[data_type] = True
+
+        # Small delay before next candidate
+        time.sleep(delay_between_requests)
 
         # Update candidate if we have new data
         if update_data:
@@ -537,7 +413,6 @@ class CandidateDataAgent:
                 # Sync to vector DB if enabled
                 if self.enable_vector_db and self.vector_db_pipeline:
                     try:
-                        # No need to refresh - candidate already has latest data after commit
                         if self.vector_db_pipeline.sync_candidate(candidate):
                             logger.info(f"🔍 Synced {candidate.name} to vector database")
                         else:
@@ -564,40 +439,38 @@ class CandidateDataAgent:
         session: Session,
         batch_size: int = 10,
         delay_between_candidates: float = 2.0,
-        delay_between_requests: float = 2.0,
+        delay_between_requests: float = 1.0,
     ) -> Dict[str, Any]:
         """
-        Run the agent to populate data for multiple candidates.
+        Run the optimized agent to populate data for multiple candidates.
 
         Args:
             session: Database session
-            batch_size: Number of candidates to process in one run
-            delay_between_candidates: Delay in seconds between processing candidates
-            delay_between_requests: Delay in seconds between API requests for same candidate
+            batch_size: Number of candidates to process
+            delay_between_candidates: Delay between processing candidates
+            delay_between_requests: Delay between requests (minimal since we batch)
 
         Returns:
-            Summary statistics of the run
+            Summary statistics
         """
         logger.info("\n" + "=" * 60)
-        logger.info("🚀 Starting Candidate Data Population Agent")
+        logger.info("🚀 Starting Optimized Candidate Data Population Agent")
         logger.info("=" * 60 + "\n")
         logger.info(f"Batch size: {batch_size}")
         logger.info(f"Delay between candidates: {delay_between_candidates}s")
         logger.info(f"Delay between requests: {delay_between_requests}s\n")
 
-        # Find candidates needing data
         candidates = self.find_candidates_needing_data(session, limit=batch_size)
 
         if not candidates:
             logger.info("✅ No candidates found needing data population")
             return {"total_processed": 0, "successful": 0, "partial": 0, "failed": 0}
 
-        # Process each candidate
         stats = {
             "total_processed": 0,
-            "successful": 0,  # All 6 fields populated
-            "partial": 0,  # Some fields populated
-            "failed": 0,  # No fields populated
+            "successful": 0,
+            "partial": 0,
+            "failed": 0,
         }
 
         for idx, candidate in enumerate(candidates, 1):
@@ -608,7 +481,6 @@ class CandidateDataAgent:
             )
 
             stats["total_processed"] += 1
-
             fields_populated = sum(status.values())
             if fields_populated == 6:
                 stats["successful"] += 1
@@ -617,13 +489,11 @@ class CandidateDataAgent:
             else:
                 stats["failed"] += 1
 
-            # Delay before next candidate
             if idx < len(candidates):
                 time.sleep(delay_between_candidates)
 
-        # Print final summary
         logger.info("\n" + "=" * 60)
-        logger.info("🎉 Agent Run Complete")
+        logger.info("🎉 Optimized Agent Run Complete")
         logger.info("=" * 60 + "\n")
         logger.info(f"Total candidates processed: {stats['total_processed']}")
         logger.info(f"Fully populated (6/6 fields): {stats['successful']}")
@@ -632,3 +502,4 @@ class CandidateDataAgent:
         logger.info("")
 
         return stats
+
