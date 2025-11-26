@@ -697,48 +697,616 @@ chmod +x scripts/scrape_all.py
 
 ---
 
+## 🛠️ **Scripts & Services**
+
+### **📋 Available Scripts**
+
+Rajniti includes several utility scripts for database management, data processing, and maintenance tasks.
+
+#### **Database Management Scripts**
+
+##### **1. Database Management (`scripts/db.py`)**
+
+Comprehensive database management utility:
+
+```bash
+# Sync database with models (auto-generate & run migrations)
+python scripts/db.py sync
+
+# Initialize database (create all tables)
+python scripts/db.py init
+
+# Migrate JSON data to database
+python scripts/db.py migrate
+
+# Preview migration without making changes
+python scripts/db.py migrate --dry-run
+
+# Reset database (⚠️ WARNING: deletes all data)
+python scripts/db.py reset
+```
+
+**Prerequisites:**
+
+-   `DATABASE_URL` environment variable must be set
+-   PostgreSQL database must be running
+
+**Usage Examples:**
+
+```bash
+# Setup new database
+export DATABASE_URL="postgresql://user:password@localhost:5432/rajniti"
+python scripts/db.py init
+python scripts/db.py migrate
+
+# Sync model changes
+python scripts/db.py sync
+
+# Preview what would be migrated
+python scripts/db.py migrate --dry-run
+```
+
+##### **2. Database Sync (`scripts/sync_db.py`)**
+
+Sync database schema with models:
+
+```bash
+# Sync database schema
+python scripts/sync_db.py
+```
+
+##### **3. JSON to Database Migration (`scripts/migrations/migrate_json_to_db.py`)**
+
+Migrate existing JSON data files to PostgreSQL:
+
+```bash
+# Migrate all JSON data to database
+python scripts/migrations/migrate_json_to_db.py
+```
+
+#### **Data Processing Scripts**
+
+##### **4. Candidate Data Population Agent (`scripts/run_candidate_agent.py`)**
+
+AI-powered agent that populates detailed candidate information:
+
+```bash
+# Process 10 candidates with default settings
+python scripts/run_candidate_agent.py
+
+# Process 50 candidates with custom delays
+python scripts/run_candidate_agent.py --batch-size 50 --delay-between-candidates 3.0
+
+# Dry run to see which candidates would be processed
+python scripts/run_candidate_agent.py --dry-run
+
+# Process with specific LLM provider
+python scripts/run_candidate_agent.py --provider openai --batch-size 20
+
+# Process with custom delays
+python scripts/run_candidate_agent.py \
+  --batch-size 100 \
+  --delay-between-candidates 3.0 \
+  --delay-between-requests 3.0
+```
+
+**Options:**
+
+-   `--batch-size`: Number of candidates to process (default: 10)
+-   `--delay-between-candidates`: Delay in seconds between candidates (default: 2.0)
+-   `--delay-between-requests`: Delay in seconds between API requests (default: 1.0)
+-   `--provider`: LLM provider - `perplexity`, `openai` (default: perplexity)
+-   `--dry-run`: Preview without making changes
+
+**Prerequisites:**
+
+-   `DATABASE_URL` environment variable
+-   `PERPLEXITY_API_KEY`, `OPENAI_API_KEY` (depending on provider)
+
+##### **5. Vector Database Sync (`scripts/sync_candidates_to_vector_db.py`)**
+
+Sync candidate data to ChromaDB for semantic search:
+
+```bash
+# Sync all candidates
+python scripts/sync_candidates_to_vector_db.py
+
+# Sync with custom batch size
+python scripts/sync_candidates_to_vector_db.py --batch-size 50
+
+# Sync only winners
+python scripts/sync_candidates_to_vector_db.py --winners-only
+
+# Sync specific state
+python scripts/sync_candidates_to_vector_db.py --state DL
+
+# Sync with custom ChromaDB path
+python scripts/sync_candidates_to_vector_db.py --chroma-db-path data/custom_chroma
+```
+
+**Options:**
+
+-   `--batch-size`: Number of candidates to process per batch (default: 100)
+-   `--winners-only`: Sync only winning candidates
+-   `--state`: Sync only candidates from specific state (e.g., DL, MH)
+-   `--chroma-db-path`: Custom path for ChromaDB storage
+
+**Prerequisites:**
+
+-   `DATABASE_URL` environment variable
+-   ChromaDB will be created automatically if it doesn't exist
+
+##### **6. Remove NOTA Candidates (`scripts/remove_nota_candidates.py`)**
+
+Remove NOTA (None of the Above) entries from candidate data:
+
+```bash
+# Remove NOTA from Lok Sabha 2024 data
+python scripts/remove_nota_candidates.py
+```
+
+**Note:** This script currently targets a specific file path. Modify the script to target different files if needed.
+
+#### **Scraping Scripts**
+
+See the [Data Scraping](#-data-scraping) section for detailed scraping script documentation.
+
+**Quick Reference:**
+
+```bash
+# Interactive scraper (recommended)
+python scripts/scrape_interactive.py
+
+# Lok Sabha scraper
+python scripts/scrape_lok_sabha.py --url <ECI_URL>
+
+# Vidhan Sabha scraper
+python scripts/scrape_vidhan_sabha.py --url <ECI_URL>
+```
+
+### **🚀 Running Services**
+
+#### **1. Development Server**
+
+Start the Flask development server:
+
+```bash
+# Using Make (recommended)
+make dev
+
+# Or directly
+python run.py
+
+# With custom host/port
+FLASK_HOST=0.0.0.0 FLASK_PORT=8000 python run.py
+```
+
+**Environment Variables:**
+
+-   `FLASK_HOST`: Server host (default: `0.0.0.0`)
+-   `FLASK_PORT`: Server port (default: `8000`)
+-   `FLASK_ENV`: Environment mode - `development` or `production` (default: `development`)
+-   `FLASK_DEBUG`: Enable debug mode - `True` or `False` (default: `True`)
+
+**Access Points:**
+
+-   API: `http://localhost:8000/api/v1/`
+-   Health Check: `http://localhost:8000/api/v1/health`
+-   API Docs: `http://localhost:8000/api/v1/doc`
+
+#### **2. Frontend Development Server**
+
+Start the Next.js frontend:
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies (first time only)
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+**Access Points:**
+
+-   Frontend: `http://localhost:3000`
+
+#### **3. Docker Services**
+
+Run all services with Docker Compose:
+
+```bash
+# Start all services (API + PostgreSQL)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Rebuild and start
+docker-compose up -d --build
+
+# Stop and remove volumes
+docker-compose down -v
+```
+
+**Services:**
+
+-   **API**: `http://localhost:8000`
+-   **PostgreSQL**: `localhost:5432`
+
+#### **4. Database Service**
+
+**Using Docker:**
+
+```bash
+# Start PostgreSQL container
+docker run -d \
+  --name rajniti-postgres \
+  -e POSTGRES_USER=rajniti \
+  -e POSTGRES_PASSWORD=rajniti_dev_password \
+  -e POSTGRES_DB=rajniti \
+  -p 5432:5432 \
+  postgres:16-alpine
+
+# Stop container
+docker stop rajniti-postgres
+
+# Remove container
+docker rm rajniti-postgres
+```
+
+**Using Local PostgreSQL:**
+
+```bash
+# Start PostgreSQL service (macOS)
+brew services start postgresql
+
+# Start PostgreSQL service (Linux)
+sudo systemctl start postgresql
+
+# Create database
+createdb rajniti
+
+# Connect to database
+psql -d rajniti
+```
+
+### **📝 Make Commands**
+
+Quick reference for common Make commands:
+
+```bash
+# Setup development environment
+make setup
+
+# Start development server
+make dev
+
+# Run tests
+make test
+
+# Format code
+make format
+
+# Run linting
+make lint
+
+# Install dependencies
+make install
+
+# Install pre-commit hooks
+make pre-commit
+
+# Clean temporary files
+make clean
+
+# Build Docker image
+make docker-build
+
+# Run Docker container
+make docker-run
+
+# Show scraping help
+make scrape-help
+```
+
+### **⚙️ Environment Setup**
+
+Create a `.env` file in the project root:
+
+```bash
+# Application
+SECRET_KEY=your-secret-key-here
+FLASK_ENV=development
+FLASK_DEBUG=True
+FLASK_HOST=0.0.0.0
+FLASK_PORT=8000
+
+# Database (optional)
+DATABASE_URL=postgresql://user:password@localhost:5432/rajniti
+
+# AI Services (optional)
+PERPLEXITY_API_KEY=your-perplexity-api-key
+OPENAI_API_KEY=your-openai-api-key
+
+# Vector Database (optional)
+CHROMA_DB_PATH=data/chroma_db
+```
+
+### **🔍 Troubleshooting Scripts**
+
+**Common Issues:**
+
+1. **"Module not found" errors:**
+
+    ```bash
+    # Ensure virtual environment is activated
+    source venv/bin/activate
+
+    # Install dependencies
+    pip install -r requirements.txt
+    ```
+
+2. **Database connection errors:**
+
+    ```bash
+    # Check DATABASE_URL is set
+    echo $DATABASE_URL
+
+    # Verify PostgreSQL is running
+    docker ps  # For Docker
+    # or
+    pg_isready  # For local PostgreSQL
+    ```
+
+3. **Permission errors:**
+
+    ```bash
+    # Make scripts executable
+    chmod +x scripts/*.py
+    ```
+
+4. **API key errors:**
+    ```bash
+    # Verify API keys are set
+    echo $PERPLEXITY_API_KEY
+    echo $OPENAI_API_KEY
+    ```
+
+---
+
 ## 📚 **API Documentation**
 
-### **🎯 Simple API Documentation**
+### **🎯 API Overview**
 
 -   **API Base URL**: `http://localhost:8000/api/v1/`
 -   **Health Check**: `http://localhost:8000/api/v1/health`
+-   **API Documentation**: `http://localhost:8000/api/v1/doc` (JSON format)
+-   **API Root**: `http://localhost:8000/api/v1/` (lists all endpoints)
+
+### **📖 Interactive API Documentation**
+
+Access the complete API documentation programmatically:
+
+```bash
+# Get full API documentation in JSON format
+curl http://localhost:8000/api/v1/doc
+
+# Get API root with endpoint list
+curl http://localhost:8000/api/v1/
+```
+
+The `/doc` endpoint returns a comprehensive JSON document with:
+
+-   All available endpoints
+-   Request/response formats
+-   Query parameters
+-   Example requests and responses
+-   Status codes
 
 ### **🔥 Core Endpoints**
 
 #### **Elections API**
 
+| Endpoint                                         | Method | Description                    | Query Parameters   |
+| ------------------------------------------------ | ------ | ------------------------------ | ------------------ |
+| `/api/v1/elections`                              | GET    | Get all elections              | None               |
+| `/api/v1/elections/{election-id}`                | GET    | Get election details           | None               |
+| `/api/v1/elections/{election-id}/candidates`     | GET    | Get candidates by election     | `limit` (optional) |
+| `/api/v1/elections/{election-id}/constituencies` | GET    | Get constituencies by election | None               |
+| `/api/v1/elections/{election-id}/parties`        | GET    | Get parties by election        | None               |
+
+**Example Requests:**
+
 ```bash
-GET /api/v1/elections                             # All elections
-GET /api/v1/elections/{election-id}               # Election details
-GET /api/v1/elections/{election-id}/results       # Election results
-GET /api/v1/elections/{election-id}/winners       # Winners only
+# Get all elections
+curl "http://localhost:8000/api/v1/elections"
+
+# Get Lok Sabha 2024 details
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024"
+
+# Get candidates for an election (with limit)
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/candidates?limit=10"
 ```
 
 #### **Candidates API**
 
+| Endpoint                                                                      | Method | Description                    | Query Parameters                                             |
+| ----------------------------------------------------------------------------- | ------ | ------------------------------ | ------------------------------------------------------------ |
+| `/api/v1/candidates/search`                                                   | GET    | Search candidates by name      | `q` (required), `election_id` (optional), `limit` (optional) |
+| `/api/v1/candidates/{candidate_id}`                                           | GET    | Get candidate by ID            | None                                                         |
+| `/api/v1/candidates/winners`                                                  | GET    | Get all winning candidates     | `election_id` (optional)                                     |
+| `/api/v1/candidates/party/{party_name}`                                       | GET    | Get candidates by party        | `election_id` (optional)                                     |
+| `/api/v1/elections/{election_id}/candidates/{candidate_id}`                   | GET    | Get candidate details          | None                                                         |
+| `/api/v1/elections/{election_id}/constituencies/{constituency_id}/candidates` | GET    | Get candidates by constituency | None                                                         |
+
+**Example Requests:**
+
 ```bash
-GET /api/v1/candidates/search?q=modi              # Search candidates
-GET /api/v1/candidates/winners                    # All winners
-GET /api/v1/candidates/party/{party-name}         # Party candidates
-GET /api/v1/elections/{id}/candidates/{id}        # Candidate details
+# Search for candidates named "Modi"
+curl "http://localhost:8000/api/v1/candidates/search?q=modi"
+
+# Search with election filter
+curl "http://localhost:8000/api/v1/candidates/search?q=modi&election_id=lok-sabha-2024"
+
+# Get candidate by ID
+curl "http://localhost:8000/api/v1/candidates/12345"
+
+# Get all winners
+curl "http://localhost:8000/api/v1/candidates/winners"
+
+# Get winners for specific election
+curl "http://localhost:8000/api/v1/candidates/winners?election_id=lok-sabha-2024"
+
+# Get candidates by party
+curl "http://localhost:8000/api/v1/candidates/party/Bharatiya%20Janata%20Party"
+
+# Get candidates in a constituency
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/constituencies/1/candidates"
 ```
 
 #### **Constituencies API**
 
+| Endpoint                                                                   | Method | Description                    | Query Parameters |
+| -------------------------------------------------------------------------- | ------ | ------------------------------ | ---------------- |
+| `/api/v1/elections/{election_id}/constituencies`                           | GET    | Get constituencies by election | None             |
+| `/api/v1/elections/{election_id}/constituencies/{constituency_id}`         | GET    | Get constituency details       | None             |
+| `/api/v1/elections/{election_id}/constituencies/{constituency_id}/results` | GET    | Get constituency results       | None             |
+| `/api/v1/constituencies/state/{state_code}`                                | GET    | Get constituencies by state    | None             |
+
+**Example Requests:**
+
 ```bash
-GET /api/v1/elections/{id}/constituencies          # Election constituencies
-GET /api/v1/elections/{id}/constituencies/{id}     # Constituency details
-GET /api/v1/constituencies/state/{state-code}      # State constituencies
+# Get all constituencies for an election
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/constituencies"
+
+# Get specific constituency
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/constituencies/1"
+
+# Get constituency results
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/constituencies/1/results"
+
+# Get constituencies by state
+curl "http://localhost:8000/api/v1/constituencies/state/DL"
 ```
 
 #### **Parties API**
 
+| Endpoint                                               | Method | Description                   | Query Parameters         |
+| ------------------------------------------------------ | ------ | ----------------------------- | ------------------------ |
+| `/api/v1/parties`                                      | GET    | Get all parties               | None                     |
+| `/api/v1/elections/{election_id}/parties`              | GET    | Get parties by election       | None                     |
+| `/api/v1/elections/{election_id}/parties/{party_name}` | GET    | Get party details in election | None                     |
+| `/api/v1/parties/{party_name}/performance`             | GET    | Get party performance         | `election_id` (optional) |
+
+**Example Requests:**
+
 ```bash
-GET /api/v1/elections/{id}/parties                 # Election parties
-GET /api/v1/elections/{id}/parties/{name}          # Party details
-GET /api/v1/parties                               # All parties
-GET /api/v1/parties/{name}/performance            # Party performance
+# Get all parties
+curl "http://localhost:8000/api/v1/parties"
+
+# Get parties in an election
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/parties"
+
+# Get specific party details
+curl "http://localhost:8000/api/v1/elections/lok-sabha-2024/parties/Bharatiya%20Janata%20Party"
+
+# Get party performance
+curl "http://localhost:8000/api/v1/parties/Bharatiya%20Janata%20Party/performance"
+
+# Get party performance for specific election
+curl "http://localhost:8000/api/v1/parties/Bharatiya%20Janata%20Party/performance?election_id=lok-sabha-2024"
+```
+
+#### **Questions API (Vector Search)**
+
+| Endpoint                                 | Method | Description                      | Request Body                                                                         |
+| ---------------------------------------- | ------ | -------------------------------- | ------------------------------------------------------------------------------------ |
+| `/api/v1/questions`                      | GET    | Get predefined questions         | None                                                                                 |
+| `/api/v1/questions/ask`                  | POST   | Ask a question (semantic search) | `question` (required), `candidate_id` (optional), `n_results` (optional, default: 5) |
+| `/api/v1/questions/{question_id}/answer` | GET    | Answer predefined question       | Query: `candidate_id` (optional), `n_results` (optional)                             |
+
+**Example Requests:**
+
+```bash
+# Get predefined questions
+curl "http://localhost:8000/api/v1/questions"
+
+# Ask a question
+curl -X POST "http://localhost:8000/api/v1/questions/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Who are the candidates with business background?", "n_results": 5}'
+
+# Ask question about specific candidate
+curl -X POST "http://localhost:8000/api/v1/questions/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is the education background?", "candidate_id": "12345"}'
+
+# Answer predefined question
+curl "http://localhost:8000/api/v1/questions/1/answer?candidate_id=12345&n_results=5"
+```
+
+#### **User API**
+
+| Endpoint                       | Method    | Description                 | Request Body                                                                                              |
+| ------------------------------ | --------- | --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `/api/v1/users/sync`           | POST      | Sync user from NextAuth     | `id`, `email` (required), `name`, `profile_picture` (optional)                                            |
+| `/api/v1/users/{user_id}`      | GET       | Get user by ID              | None                                                                                                      |
+| `/api/v1/users/{user_id}`      | PATCH/PUT | Update user profile         | `username`, `name`, `state`, `city`, `age_group`, `pincode`, `political_ideology`, `onboarding_completed` |
+| `/api/v1/users/check-username` | POST      | Check username availability | `username` (required), `user_id` (optional)                                                               |
+
+**Example Requests:**
+
+```bash
+# Sync user from NextAuth
+curl -X POST "http://localhost:8000/api/v1/users/sync" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "google_123", "email": "user@example.com", "name": "John Doe"}'
+
+# Get user
+curl "http://localhost:8000/api/v1/users/google_123"
+
+# Update user profile
+curl -X PATCH "http://localhost:8000/api/v1/users/google_123" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "johndoe", "state": "DL", "city": "New Delhi"}'
+
+# Check username availability
+curl -X POST "http://localhost:8000/api/v1/users/check-username" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "johndoe"}'
+```
+
+#### **Health & Root Endpoints**
+
+| Endpoint         | Method | Description                       |
+| ---------------- | ------ | --------------------------------- |
+| `/api/v1/`       | GET    | API root with endpoint list       |
+| `/api/v1/health` | GET    | Health check with database status |
+| `/api/v1/doc`    | GET    | Complete API documentation (JSON) |
+
+**Example Requests:**
+
+```bash
+# API root
+curl "http://localhost:8000/api/v1/"
+
+# Health check
+curl "http://localhost:8000/api/v1/health"
+
+# API documentation
+curl "http://localhost:8000/api/v1/doc"
 ```
 
 ---
@@ -1123,7 +1691,7 @@ Rajniti includes an intelligent agent that automatically populates detailed cand
     ```bash
     # Ensure database is set up
     export DATABASE_URL="postgresql://user:password@localhost:5432/rajniti"
-    
+
     # Ensure Perplexity API key is configured
     export PERPLEXITY_API_KEY="your-api-key-here"
     ```
@@ -1133,10 +1701,10 @@ Rajniti includes an intelligent agent that automatically populates detailed cand
     ```bash
     # Process 10 candidates with default settings
     python scripts/run_candidate_agent.py
-    
+
     # Process 50 candidates with custom delays
     python scripts/run_candidate_agent.py --batch-size 50 --delay-between-candidates 3.0
-    
+
     # Dry run to see which candidates would be processed
     python scripts/run_candidate_agent.py --dry-run
     ```
@@ -1195,7 +1763,7 @@ with get_db_session() as session:
         batch_size=20,
         delay_between_candidates=2.0
     )
-    
+
     print(f"Processed: {stats['total_processed']}")
     print(f"Successful: {stats['successful']}")
 ```
@@ -1205,6 +1773,7 @@ with get_db_session() as session:
 For detailed documentation, see [docs/CANDIDATE_AGENT.md](docs/CANDIDATE_AGENT.md)
 
 Topics covered:
+
 -   Architecture and design
 -   Data structures
 -   Error handling
@@ -1285,6 +1854,7 @@ export DATABASE_URL="postgresql://user:password@localhost:5432/rajniti"
 For detailed documentation, see [docs/VECTOR_DB.md](docs/VECTOR_DB.md)
 
 Topics covered:
+
 -   Architecture and components
 -   Data storage format
 -   Usage examples

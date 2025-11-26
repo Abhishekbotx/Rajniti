@@ -310,8 +310,11 @@ def api_root():
                 "parties": "/api/v1/parties",
                 "questions": "/api/v1/questions",
                 "ask_question": "/api/v1/questions/ask",
+                "users": "/api/v1/users",
                 "health": "/api/v1/health",
+                "documentation": "/api/v1/doc",
             },
+            "documentation": "Visit /api/v1/doc for complete API documentation",
         }
     )
 
@@ -331,6 +334,313 @@ def health_check():
             "database": {
                 "connected": db_status,
                 "status": "healthy" if db_status else "not configured or unavailable",
+            },
+        }
+    )
+
+
+@api_bp.route("/doc", methods=["GET"])
+def api_documentation():
+    """Complete API documentation in JSON format for developers"""
+    return jsonify(
+        {
+            "success": True,
+            "api_version": "1.0.0",
+            "base_url": "/api/v1",
+            "description": "Rajniti Election Data API - Complete endpoint documentation",
+            "endpoints": {
+                "root": {
+                    "path": "/api/v1/",
+                    "method": "GET",
+                    "description": "API root with endpoint list",
+                    "response": {"success": True, "message": "...", "endpoints": "..."},
+                },
+                "health": {
+                    "path": "/api/v1/health",
+                    "method": "GET",
+                    "description": "Health check with database status",
+                    "response": {
+                        "success": True,
+                        "message": "Rajniti API is healthy",
+                        "version": "1.0.0",
+                        "database": {"connected": True, "status": "healthy"},
+                    },
+                },
+                "elections": {
+                    "list": {
+                        "path": "/api/v1/elections",
+                        "method": "GET",
+                        "description": "Get all elections",
+                        "query_params": None,
+                        "response": {"success": True, "data": [], "total": 0},
+                    },
+                    "details": {
+                        "path": "/api/v1/elections/{election_id}",
+                        "method": "GET",
+                        "description": "Get election details",
+                        "path_params": {"election_id": "string - e.g., lok-sabha-2024"},
+                        "response": {"success": True, "data": {}},
+                    },
+                    "candidates": {
+                        "path": "/api/v1/elections/{election_id}/candidates",
+                        "method": "GET",
+                        "description": "Get candidates by election",
+                        "query_params": {"limit": "integer (optional)"},
+                        "response": {"success": True, "data": []},
+                    },
+                    "constituencies": {
+                        "path": "/api/v1/elections/{election_id}/constituencies",
+                        "method": "GET",
+                        "description": "Get constituencies by election",
+                        "response": {"success": True, "data": []},
+                    },
+                    "parties": {
+                        "path": "/api/v1/elections/{election_id}/parties",
+                        "method": "GET",
+                        "description": "Get parties by election",
+                        "response": {"success": True, "data": []},
+                    },
+                },
+                "candidates": {
+                    "search": {
+                        "path": "/api/v1/candidates/search",
+                        "method": "GET",
+                        "description": "Search candidates by name",
+                        "query_params": {
+                            "q": "string (required) - search query",
+                            "election_id": "string (optional)",
+                            "limit": "integer (optional)",
+                        },
+                        "response": {"success": True, "data": {"candidates": []}},
+                    },
+                    "by_id": {
+                        "path": "/api/v1/candidates/{candidate_id}",
+                        "method": "GET",
+                        "description": "Get candidate by ID",
+                        "path_params": {"candidate_id": "string"},
+                        "response": {"success": True, "data": {}},
+                    },
+                    "winners": {
+                        "path": "/api/v1/candidates/winners",
+                        "method": "GET",
+                        "description": "Get all winning candidates",
+                        "query_params": {"election_id": "string (optional)"},
+                        "response": {"success": True, "data": []},
+                    },
+                    "by_party": {
+                        "path": "/api/v1/candidates/party/{party_name}",
+                        "method": "GET",
+                        "description": "Get candidates by party",
+                        "path_params": {"party_name": "string - URL encoded"},
+                        "query_params": {"election_id": "string (optional)"},
+                        "response": {"success": True, "data": []},
+                    },
+                    "by_constituency": {
+                        "path": "/api/v1/elections/{election_id}/constituencies/{constituency_id}/candidates",
+                        "method": "GET",
+                        "description": "Get candidates by constituency",
+                        "path_params": {
+                            "election_id": "string",
+                            "constituency_id": "string",
+                        },
+                        "response": {"success": True, "data": []},
+                    },
+                },
+                "constituencies": {
+                    "by_election": {
+                        "path": "/api/v1/elections/{election_id}/constituencies",
+                        "method": "GET",
+                        "description": "Get constituencies by election",
+                        "response": {"success": True, "data": []},
+                    },
+                    "details": {
+                        "path": "/api/v1/elections/{election_id}/constituencies/{constituency_id}",
+                        "method": "GET",
+                        "description": "Get constituency details",
+                        "path_params": {
+                            "election_id": "string",
+                            "constituency_id": "string",
+                        },
+                        "response": {"success": True, "data": {}},
+                    },
+                    "results": {
+                        "path": "/api/v1/elections/{election_id}/constituencies/{constituency_id}/results",
+                        "method": "GET",
+                        "description": "Get constituency results",
+                        "path_params": {
+                            "election_id": "string",
+                            "constituency_id": "string",
+                        },
+                        "response": {"success": True, "data": {}},
+                    },
+                    "by_state": {
+                        "path": "/api/v1/constituencies/state/{state_code}",
+                        "method": "GET",
+                        "description": "Get constituencies by state",
+                        "path_params": {"state_code": "string - e.g., DL, MH"},
+                        "response": {"success": True, "data": []},
+                    },
+                },
+                "parties": {
+                    "list": {
+                        "path": "/api/v1/parties",
+                        "method": "GET",
+                        "description": "Get all parties",
+                        "response": {"success": True, "data": []},
+                    },
+                    "by_election": {
+                        "path": "/api/v1/elections/{election_id}/parties",
+                        "method": "GET",
+                        "description": "Get parties by election",
+                        "response": {"success": True, "data": []},
+                    },
+                    "details": {
+                        "path": "/api/v1/elections/{election_id}/parties/{party_name}",
+                        "method": "GET",
+                        "description": "Get party details in election",
+                        "path_params": {
+                            "election_id": "string",
+                            "party_name": "string - URL encoded",
+                        },
+                        "response": {"success": True, "data": {}},
+                    },
+                    "performance": {
+                        "path": "/api/v1/parties/{party_name}/performance",
+                        "method": "GET",
+                        "description": "Get party performance",
+                        "path_params": {"party_name": "string - URL encoded"},
+                        "query_params": {"election_id": "string (optional)"},
+                        "response": {"success": True, "data": {}},
+                    },
+                },
+                "questions": {
+                    "list": {
+                        "path": "/api/v1/questions",
+                        "method": "GET",
+                        "description": "Get predefined questions",
+                        "response": {"success": True, "data": {"questions": []}},
+                    },
+                    "ask": {
+                        "path": "/api/v1/questions/ask",
+                        "method": "POST",
+                        "description": "Ask a question (semantic search)",
+                        "request_body": {
+                            "question": "string (required)",
+                            "candidate_id": "string (optional)",
+                            "n_results": "integer (optional, default: 5)",
+                        },
+                        "response": {
+                            "success": True,
+                            "data": {"answer": "...", "candidates": []},
+                        },
+                    },
+                    "answer_predefined": {
+                        "path": "/api/v1/questions/{question_id}/answer",
+                        "method": "GET",
+                        "description": "Answer predefined question",
+                        "path_params": {"question_id": "integer"},
+                        "query_params": {
+                            "candidate_id": "string (optional)",
+                            "n_results": "integer (optional, default: 5)",
+                        },
+                        "response": {
+                            "success": True,
+                            "data": {"answer": "...", "candidates": []},
+                        },
+                    },
+                },
+                "users": {
+                    "sync": {
+                        "path": "/api/v1/users/sync",
+                        "method": "POST",
+                        "description": "Sync user from NextAuth",
+                        "request_body": {
+                            "id": "string (required)",
+                            "email": "string (required)",
+                            "name": "string (optional)",
+                            "profile_picture": "string (optional)",
+                        },
+                        "response": {"success": True, "data": {}},
+                    },
+                    "get": {
+                        "path": "/api/v1/users/{user_id}",
+                        "method": "GET",
+                        "description": "Get user by ID",
+                        "path_params": {"user_id": "string"},
+                        "response": {"success": True, "data": {}},
+                    },
+                    "update": {
+                        "path": "/api/v1/users/{user_id}",
+                        "method": "PATCH/PUT",
+                        "description": "Update user profile",
+                        "path_params": {"user_id": "string"},
+                        "request_body": {
+                            "username": "string (optional)",
+                            "name": "string (optional)",
+                            "state": "string (optional)",
+                            "city": "string (optional)",
+                            "age_group": "string (optional)",
+                            "pincode": "string (optional)",
+                            "political_ideology": "string (optional)",
+                            "onboarding_completed": "boolean (optional)",
+                        },
+                        "response": {"success": True, "data": {}, "message": "..."},
+                    },
+                    "check_username": {
+                        "path": "/api/v1/users/check-username",
+                        "method": "POST",
+                        "description": "Check username availability",
+                        "request_body": {
+                            "username": "string (required)",
+                            "user_id": "string (optional)",
+                        },
+                        "response": {"success": True, "available": True},
+                    },
+                },
+            },
+            "response_format": {
+                "success": "boolean - indicates if request was successful",
+                "data": "object/array - response data",
+                "error": "string - error message (only if success is false)",
+                "total": "integer - total count (for list endpoints)",
+            },
+            "status_codes": {
+                "200": "Success",
+                "400": "Bad Request - invalid parameters",
+                "404": "Not Found - resource not found",
+                "500": "Internal Server Error",
+                "503": "Service Unavailable - service not configured",
+            },
+            "examples": {
+                "search_candidates": {
+                    "request": "GET /api/v1/candidates/search?q=modi&election_id=lok-sabha-2024",
+                    "response": {
+                        "success": True,
+                        "data": {
+                            "candidates": [
+                                {
+                                    "candidate_name": "NARENDRA MODI",
+                                    "party": "Bharatiya Janata Party",
+                                    "constituency": "Varanasi",
+                                }
+                            ]
+                        },
+                    },
+                },
+                "ask_question": {
+                    "request": "POST /api/v1/questions/ask",
+                    "request_body": {
+                        "question": "Who are the candidates with business background?",
+                        "n_results": 5,
+                    },
+                    "response": {
+                        "success": True,
+                        "data": {
+                            "answer": "Based on the search...",
+                            "candidates": [],
+                        },
+                    },
+                },
             },
         }
     )
