@@ -31,7 +31,7 @@ sys.path.insert(0, str(project_root))
 from dotenv import load_dotenv
 
 from app.database import get_db_session
-from app.services.optimized_candidate_agent import CandidateAgent
+from app.services.candidate_agent import CandidateAgent
 
 # Load environment variables
 load_dotenv()
@@ -39,7 +39,7 @@ load_dotenv()
 # Setup logging
 log_dir = Path("logs")
 log_dir.mkdir(exist_ok=True)
-log_file = log_dir / "optimized_candidate_agent.log"
+log_file = log_dir / "candidate_agent.log"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,8 +57,6 @@ def validate_environment(provider: str):
         required_vars = ["PERPLEXITY_API_KEY"]
     elif provider_lower == "openai":
         required_vars = ["OPENAI_API_KEY"]
-    elif provider_lower == "anthropic":
-        required_vars = ["ANTHROPIC_API_KEY"]
     else:
         logger.error(f"Unknown provider: {provider}")
         return False
@@ -83,13 +81,13 @@ def validate_environment(provider: str):
 def main():
     """Main function to run the optimized candidate data population agent."""
     parser = argparse.ArgumentParser(
-        description="Run the Optimized Candidate Data Population Agent"
+        description="Run the Candidate Data Population Agent"
     )
     parser.add_argument(
         "--provider",
         type=str,
         default=None,
-        choices=["perplexity", "openai", "anthropic"],
+        choices=["perplexity", "openai"],
         help="LLM provider to use (default: from LLM_PROVIDER env var or 'perplexity')",
     )
     parser.add_argument(
@@ -141,7 +139,7 @@ def main():
     if not validate_environment(provider):
         sys.exit(1)
 
-    logger.info("🚀 Optimized Candidate Data Population Agent")
+    logger.info("🚀 Candidate Data Population Agent")
     logger.info("=" * 60)
     logger.info(f"Provider: {provider}")
     logger.info(f"Batch size: {args.batch_size}")
