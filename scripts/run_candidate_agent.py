@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """
-CLI script to run the Candidate Data Population Agent.
+CLI script to run the Optimized Candidate Data Population Agent.
 
-This script runs the agent to automatically populate detailed candidate information
-using Perplexity AI. It connects to the database and processes candidates in batches.
+This script uses the optimized agent that:
+- Combines multiple API calls into batch queries (6 calls → 1 call)
+- Implements caching to avoid redundant calls
+- Supports multiple LLM providers (Perplexity, OpenAI, Anthropic)
 
 Usage:
-    python scripts/run_candidate_agent.py [--batch-size 10] [--delay 2.0]
+    python scripts/run_optimized_agent.py [--provider openai] [--batch-size 10]
 
 Environment Variables:
     DATABASE_URL: PostgreSQL connection string (required)
-    PERPLEXITY_API_KEY: Perplexity API key (required)
+    LLM_PROVIDER: LLM provider ('perplexity', 'openai', 'anthropic')
+    PERPLEXITY_API_KEY: Perplexity API key (if using perplexity)
+    OPENAI_API_KEY: OpenAI API key (if using openai)
+    ANTHROPIC_API_KEY: Anthropic API key (if using anthropic)
 """
 
 import argparse
@@ -26,7 +31,7 @@ sys.path.insert(0, str(project_root))
 from dotenv import load_dotenv
 
 from app.database import get_db_session
-from app.services.candidate_agent import CandidateDataAgent
+from app.services.optimized_candidate_agent import CandidateAgent
 
 # Load environment variables
 load_dotenv()
@@ -34,32 +39,39 @@ load_dotenv()
 # Setup logging
 log_dir = Path("logs")
 log_dir.mkdir(exist_ok=True)
-log_file = log_dir / "candidate_agent.log"
+log_file = log_dir / "optimized_candidate_agent.log"
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(log_file)
-    ]
+    handlers=[logging.StreamHandler(), logging.FileHandler(log_file)],
 )
 logger = logging.getLogger(__name__)
 
 
-def validate_environment():
+def validate_environment(provider: str):
     """Validate required environment variables are set."""
-    required_vars = ["PERPLEXITY_API_KEY"]
+    provider_lower = provider.lower()
+
+    if provider_lower == "perplexity":
+        required_vars = ["PERPLEXITY_API_KEY"]
+    elif provider_lower == "openai":
+        required_vars = ["OPENAI_API_KEY"]
+    elif provider_lower == "anthropic":
+        required_vars = ["ANTHROPIC_API_KEY"]
+    else:
+        logger.error(f"Unknown provider: {provider}")
+        return False
+
     missing_vars = [var for var in required_vars if not os.getenv(var)]
 
     if missing_vars:
         logger.error(
-            f"Missing required environment variables: {', '.join(missing_vars)}"
+            f"Missing required environment variables for {provider}: {', '.join(missing_vars)}"
         )
         logger.error("Please set them in your .env file or environment")
         return False
 
-    # DATABASE_URL is optional - if not set, agent will use JSON files
     if not os.getenv("DATABASE_URL"):
         logger.warning("DATABASE_URL not set - make sure database is configured")
         logger.warning("The agent requires a database connection to work")
@@ -69,9 +81,16 @@ def validate_environment():
 
 
 def main():
-    """Main function to run the candidate data population agent."""
+    """Main function to run the optimized candidate data population agent."""
     parser = argparse.ArgumentParser(
-        description="Run the Candidate Data Population Agent"
+        description="Run the Optimized Candidate Data Population Agent"
+    )
+    parser.add_argument(
+        "--provider",
+        type=str,
+        default=None,
+        choices=["perplexity", "openai", "anthropic"],
+        help="LLM provider to use (default: from LLM_PROVIDER env var or 'perplexity')",
     )
     parser.add_argument(
         "--batch-size",
@@ -88,8 +107,19 @@ def main():
     parser.add_argument(
         "--delay-between-requests",
         type=float,
-        default=2.0,
-        help="Delay in seconds between API requests for same candidate (default: 2.0)",
+        default=1.0,
+        help="Delay in seconds between API requests (default: 1.0, minimal since we batch)",
+    )
+    parser.add_argument(
+        "--disable-cache",
+        action="store_true",
+        help="Disable response caching",
+    )
+    parser.add_argument(
+        "--cache-ttl-hours",
+        type=int,
+        default=24,
+        help="Cache TTL in hours (default: 24)",
     )
     parser.add_argument(
         "--dry-run",
@@ -104,30 +134,41 @@ def main():
 
     args = parser.parse_args()
 
+    # Determine provider
+    provider = args.provider or os.getenv("LLM_PROVIDER", "perplexity")
+
     # Validate environment
-    if not validate_environment():
+    if not validate_environment(provider):
         sys.exit(1)
 
-    logger.info("🚀 Candidate Data Population Agent")
+    logger.info("🚀 Optimized Candidate Data Population Agent")
     logger.info("=" * 60)
+    logger.info(f"Provider: {provider}")
     logger.info(f"Batch size: {args.batch_size}")
     logger.info(f"Delay between candidates: {args.delay_between_candidates}s")
     logger.info(f"Delay between requests: {args.delay_between_requests}s")
+    logger.info(f"Caching: {'Disabled' if args.disable_cache else f'Enabled (TTL: {args.cache_ttl_hours}h)'}")
     logger.info(f"Dry run: {args.dry_run}")
     logger.info(f"Vector DB sync: {'Disabled' if args.disable_vector_db else 'Enabled'}")
     logger.info("=" * 60)
     logger.info("")
+    logger.info("💡 Optimization: Using batch queries (6 API calls → 1 call per candidate)")
+    logger.info("")
 
     try:
-        # Initialize agent
-        agent = CandidateDataAgent(enable_vector_db=not args.disable_vector_db)
+        # Initialize optimized agent
+        agent = CandidateAgent(
+            llm_provider=provider,
+            enable_cache=not args.disable_cache,
+            cache_ttl_hours=args.cache_ttl_hours,
+            enable_vector_db=not args.disable_vector_db,
+        )
 
         # Run agent with database session
         with get_db_session() as session:
             if args.dry_run:
                 logger.info("DRY RUN MODE - No database updates will be made")
                 logger.info("")
-                # Just find and display candidates
                 candidates = agent.find_candidates_needing_data(
                     session, limit=args.batch_size
                 )
@@ -136,19 +177,27 @@ def main():
                     logger.info(f"{idx}. {candidate.name} (ID: {candidate.id})")
                 logger.info("")
             else:
-                agent.run(
+                stats = agent.run(
                     session=session,
                     batch_size=args.batch_size,
                     delay_between_candidates=args.delay_between_candidates,
                     delay_between_requests=args.delay_between_requests,
                 )
 
-                logger.info("✅ Agent run completed successfully")
+                logger.info("✅ Optimized agent run completed successfully")
+                logger.info("")
+                logger.info("💡 Cost Savings:")
+                logger.info(
+                    f"   - Traditional agent: {stats['total_processed'] * 6} API calls"
+                )
+                logger.info(
+                    f"   - Optimized agent: ~{stats['total_processed']} API calls"
+                )
+                logger.info(
+                    f"   - Savings: ~{stats['total_processed'] * 5} API calls ({stats['total_processed'] * 5 / (stats['total_processed'] * 6) * 100:.1f}% reduction)"
+                )
                 logger.info("")
                 logger.info("To process more candidates, run this script again.")
-                logger.info(
-                    "The agent will automatically find the next batch of candidates."
-                )
 
     except KeyboardInterrupt:
         logger.info("\n\n⚠️  Agent interrupted by user")
@@ -160,3 +209,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
