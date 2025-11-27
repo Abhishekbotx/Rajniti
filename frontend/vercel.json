@@ -1,10 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/v1/:path*",
-      "destination": "https://rajiniti-backend-dev-572964795629.asia-south2.run.app/api/v1/:path*"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -38,4 +32,3 @@
     }
   ]
 }
-
