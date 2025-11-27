@@ -279,10 +279,12 @@ git push -u origin main
 3. Import your **rajniti repository** from GitHub/GitLab/Bitbucket
 4. Configure project settings:
     - **Framework Preset**: Next.js (auto-detected)
-    - **Root Directory**: `frontend`
+    - **Root Directory**: `frontend` ⚠️ **CRITICAL**: Set this to `frontend` for monorepo deployments
     - **Build Command**: `npm run build` (auto-detected)
-    - **Output Directory**: `.next` (auto-detected)
+    - **Output Directory**: Leave empty (Vercel handles this automatically for Next.js)
 5. Click **"Deploy"**
+
+**⚠️ Important**: If you get a 404 error after deployment, check that the **Root Directory** is set to `frontend` in your Vercel project settings. This is the most common cause of 404 errors in monorepo setups.
 
 Vercel will automatically detect Next.js and configure everything for you!
 

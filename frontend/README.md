@@ -26,40 +26,48 @@ npm run build
 npm start
 ```
 
-## 🌐 Deploy to Netlify
+## 🌐 Deploy to Vercel
 
 ### Option 1: GitHub Integration (Recommended)
 
 1. Push your code to GitHub
-2. Go to [Netlify Dashboard](https://app.netlify.com)
-3. Click "Add new site" → "Import an existing project"
-4. Connect your GitHub repository
-5. Configure build settings:
-    - **Base directory**: `frontend`
-    - **Build command**: `npm run build`
-    - **Publish directory**: `.next`
+2. Go to [Vercel Dashboard](https://vercel.com)
+3. Click "Add New Project"
+4. Import your GitHub repository
+5. Configure project settings:
+    - **Framework Preset**: Next.js (auto-detected)
+    - **Root Directory**: `frontend` (if deploying from monorepo)
+    - **Build Command**: `npm run build` (auto-detected)
+    - **Output Directory**: `.next` (auto-detected)
 6. Add environment variables (if needed):
     - `NEXT_PUBLIC_API_URL`: Your backend API URL
-7. Click "Deploy site"
+7. Click "Deploy"
 
-### Option 2: Netlify CLI
+Vercel will automatically detect Next.js and configure everything!
+
+### Option 2: Vercel CLI
 
 ```bash
-# Install Netlify CLI
-npm install -g netlify-cli
+# Install Vercel CLI
+npm install -g vercel
 
 # Login
-netlify login
+vercel login
 
-# Deploy
-netlify deploy --prod
+# Navigate to frontend directory
+cd frontend
+
+# Deploy to production
+vercel --prod
 ```
 
-### Option 3: Drag & Drop
+### Option 3: Vercel Dashboard (Manual)
 
-1. Build locally: `npm run build`
-2. Go to [Netlify Drop](https://app.netlify.com/drop)
-3. Drag the `.next` folder
+1. Go to [Vercel Dashboard](https://vercel.com/new)
+2. Click "Import Project"
+3. Select your Git provider and repository
+4. Configure settings (auto-detected for Next.js)
+5. Deploy
 
 ## ⚙️ Configuration
 
@@ -77,19 +85,22 @@ Edit `.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-For Netlify deployment, set environment variables in:
-**Site Settings → Environment Variables**
+For Vercel deployment, set environment variables in:
+**Project Settings → Environment Variables**
 
 ### Backend Integration
 
-If you have a backend API, update `netlify.toml`:
+If you have a backend API, update `vercel.json`:
 
-```toml
-[[redirects]]
-  from = "/api/*"
-  to = "https://your-backend-url.run.app/api/:splat"
-  status = 200
-  force = false
+```json
+{
+    "rewrites": [
+        {
+            "source": "/api/:path*",
+            "destination": "https://your-backend-url.run.app/api/v1/:path*"
+        }
+    ]
+}
 ```
 
 ## 📁 Project Structure
@@ -105,7 +116,7 @@ frontend/
 │   └── PreambleSection.tsx
 ├── public/               # Static assets
 ├── next.config.ts        # Next.js configuration
-├── netlify.toml          # Netlify deployment config
+├── vercel.json            # Vercel deployment config
 ├── package.json          # Dependencies
 └── tsconfig.json         # TypeScript config
 ```
@@ -116,7 +127,7 @@ frontend/
 -   🎨 Tailwind CSS 4
 -   📱 Fully Responsive Design
 -   🇮🇳 India-themed Color Scheme (Orange, White, Green)
--   🚀 Optimized for Netlify Deployment
+-   🚀 Optimized for Vercel Deployment
 -   🔒 Security Headers Configured
 -   ⚡ Static Asset Caching
 -   🌐 API Proxy Support
@@ -126,7 +137,7 @@ frontend/
 -   **Framework**: Next.js 16
 -   **Language**: TypeScript
 -   **Styling**: Tailwind CSS 4
--   **Deployment**: Netlify
+-   **Deployment**: Vercel (recommended)
 -   **Package Manager**: npm
 
 ## 📦 Dependencies
@@ -165,29 +176,38 @@ npm start           # Start production server
 npm run lint        # Run ESLint
 ```
 
-## 🌟 Netlify Configuration
+## 🌟 Vercel Configuration
 
-The `netlify.toml` file includes:
+The `vercel.json` file includes:
 
--   ✅ Next.js plugin for optimal performance
--   ✅ Security headers (CSP, XSS, Frame protection)
+-   ✅ Next.js framework detection
+-   ✅ Security headers (XSS, Frame protection, Content-Type)
 -   ✅ Static asset caching
--   ✅ API proxy support (optional)
--   ✅ Node.js 20 environment
+-   ✅ API proxy support (rewrites)
+-   ✅ Automatic build optimization
 
 ## 🐛 Troubleshooting
 
-### Build Fails on Netlify
+### Build Fails on Vercel
 
-1. Check Node.js version in `netlify.toml` (should be 20)
+1. Check Node.js version (Vercel uses Node.js 20 by default)
 2. Verify all dependencies are in `package.json`
-3. Check build logs in Netlify Dashboard
+3. Check build logs in Vercel Dashboard
+4. Ensure `next.config.ts` is properly configured
+
+### 404 Errors After Deployment
+
+1. **Check Root Directory**: If deploying from monorepo, set Root Directory to `frontend` in Vercel project settings
+2. **Verify Build Output**: Ensure `.next` folder is generated correctly
+3. **Check Routes**: Verify all page files exist in `app/` directory
+4. **Review Build Logs**: Check Vercel deployment logs for errors
 
 ### API Calls Not Working
 
-1. Verify `NEXT_PUBLIC_API_URL` is set in Netlify environment variables
+1. Verify `NEXT_PUBLIC_API_URL` is set in Vercel environment variables
 2. Check CORS settings on backend
-3. Verify API proxy in `netlify.toml` is configured correctly
+3. Verify API proxy in `vercel.json` is configured correctly
+4. Ensure backend URL is accessible from Vercel's servers
 
 ### Styling Issues
 
@@ -198,7 +218,7 @@ The `netlify.toml` file includes:
 ## 📚 Resources
 
 -   [Next.js Documentation](https://nextjs.org/docs)
--   [Netlify Documentation](https://docs.netlify.com)
+-   [Vercel Documentation](https://vercel.com/docs)
 -   [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 
 ## 🤝 Contributing
