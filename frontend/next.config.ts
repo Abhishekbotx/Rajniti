@@ -15,8 +15,8 @@ const nextConfig: NextConfig = {
                 hostname: "results.eci.gov.in",
                 pathname: "/**"
             }
-        ],
-        unoptimized: true // Netlify handles image optimization
+        ]
+        // Vercel handles image optimization automatically
     }
 }
 
