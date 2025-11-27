@@ -47,7 +47,7 @@ docker-build: ## Build Docker image
 
 docker-run: ## Run Docker container
 	@echo "🐳 Running Docker container..."
-	docker run -p 8080:8080 rajniti
+	docker run -p 8000:8000 rajniti
 
 scrape: ## Run election data scraping
 	@echo "🕸️ Starting election data scraping..."

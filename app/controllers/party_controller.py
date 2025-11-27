@@ -34,8 +34,8 @@ class PartyController:
         # Prepare party data with seats
         parties_data = []
         for party in parties:
-            party_dict = party.dict()
-            party_dict["seats_won"] = party_seats.get(party.id, 0)
+            party_dict = party.copy()
+            party_dict["seats_won"] = party_seats.get(party["id"], 0)
             parties_data.append(party_dict)
 
         # Sort by seats won
@@ -43,7 +43,7 @@ class PartyController:
 
         return {
             "election_id": election_id,
-            "election_name": election.name,
+            "election_name": election["name"],
             "total_parties": len(parties_data),
             "parties": parties_data,
         }
@@ -64,8 +64,8 @@ class PartyController:
         for candidate in candidates:
             enriched = self.data_service.enrich_candidate_data(candidate, election_id)
             if (
-                enriched.get("party_name", "").lower() == party.name.lower()
-                or enriched.get("party_id") == party.id
+                enriched.get("party_name", "").lower() == party["name"].lower()
+                or enriched.get("party_id") == party["id"]
             ):
                 party_candidates.append(enriched)
                 if candidate.get("status") == "WON":
@@ -73,7 +73,7 @@ class PartyController:
 
         return {
             "election_id": election_id,
-            "party": party.dict(),
+            "party": party,
             "seats_won": winners,
             "total_candidates": len(party_candidates),
             "candidates": party_candidates,
@@ -104,8 +104,8 @@ class PartyController:
         for candidate in candidates:
             enriched = self.data_service.enrich_candidate_data(candidate, election_id)
             if (
-                enriched.get("party_name", "").lower() == party.name.lower()
-                or enriched.get("party_id") == party.id
+                enriched.get("party_name", "").lower() == party["name"].lower()
+                or enriched.get("party_id") == party["id"]
             ):
                 party_candidates.append(enriched)
 
@@ -142,10 +142,10 @@ class PartyController:
         state_performance.sort(key=lambda x: x["seats_won"], reverse=True)
 
         return {
-            "party_name": party.name,
-            "party_short_name": party.short_name,
+            "party_name": party["name"],
+            "party_short_name": party["short_name"],
             "election_id": election_id,
-            "election_name": election.name,
+            "election_name": election["name"],
             "total_candidates": len(party_candidates),
             "seats_won": winners,
             "win_percentage": round((winners / len(party_candidates) * 100), 2)
@@ -170,22 +170,22 @@ class PartyController:
                     party_seats[party_id] = party_seats.get(party_id, 0) + 1
 
             for party in parties:
-                party_name = party.name
-                seats_won = party_seats.get(party.id, 0)
+                party_name = party["name"]
+                seats_won = party_seats.get(party["id"], 0)
 
                 if party_name not in all_parties_dict:
                     all_parties_dict[party_name] = {
                         "party_name": party_name,
-                        "party_short_name": party.short_name,
-                        "symbol": party.symbol,
+                        "party_short_name": party["short_name"],
+                        "symbol": party["symbol"],
                         "elections": [],
                         "total_seats": 0,
                     }
 
                 all_parties_dict[party_name]["elections"].append(
                     {
-                        "election_id": election.id,
-                        "election_name": election.name,
+                        "election_id": election["id"],
+                        "election_name": election["name"],
                         "seats_won": seats_won,
                     }
                 )

@@ -28,7 +28,7 @@ RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Expose port (GCP Cloud Run uses PORT env variable)
-EXPOSE 8080
+EXPOSE 8000
 
 # Use gunicorn for production
 CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 'app:create_app()'
