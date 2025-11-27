@@ -15,12 +15,12 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 
 | Platform          | Type       | Command                 | Status   |
 | ----------------- | ---------- | ----------------------- | -------- |
-| **Netlify**       | Frontend   | `netlify deploy --prod` | ✅ Ready |
+| **Vercel**        | Frontend   | `vercel --prod`         | ✅ Ready |
 | **GCP Cloud Run** | Backend    | `gcloud builds submit`  | ✅ Ready |
 | **Docker**        | Full Stack | `docker-compose up -d`  | ✅ Ready |
-| **Vercel**        | Frontend   | `vercel --prod`         | ✅ Ready |
+| **Netlify**       | Frontend   | `netlify deploy --prod` | ✅ Ready |
 
-👉 **Jump to**: [Netlify Deployment Guide](#deploy-to-netlify-) • [Backend Deployment](#deployment) • [Docker Setup](#option-1-docker-recommended)
+👉 **Jump to**: [Vercel Deployment Guide](#deploy-to-vercel-) • [Backend Deployment](#deployment) • [Docker Setup](#option-1-docker-recommended)
 
 ---
 
@@ -238,7 +238,7 @@ The Rajniti landing page is a beautiful, India-themed website built with Next.js
 -   🎨 **India-Themed Design**: Orange, white, and green color scheme
 -   ⚡ **Server-Side Rendering**: Built with Next.js App Router for optimal performance
 -   📱 **Fully Responsive**: Works seamlessly on all devices
--   🚀 **Easy Deployment**: Compatible with Vercel, Netlify, GCP, and AWS
+-   🚀 **Easy Deployment**: Compatible with Vercel (recommended), Netlify, GCP, and AWS
 
 ### **Quick Start (Frontend)**
 
@@ -255,9 +255,9 @@ npm run dev
 # Visit http://localhost:3000
 ```
 
-### **Deploy to Netlify** 🚀
+### **Deploy to Vercel** 🚀
 
-Deploy the Rajniti frontend to Netlify in just a few minutes!
+Deploy the Rajniti frontend to Vercel in just a few minutes! Vercel is the recommended platform for Next.js applications with excellent performance and developer experience.
 
 #### **Step 1: Push to Git Repository**
 
@@ -272,82 +272,84 @@ git remote add origin https://github.com/your-username/rajniti.git
 git push -u origin main
 ```
 
-#### **Step 2: Deploy via Netlify Dashboard**
+#### **Step 2: Deploy via Vercel Dashboard**
 
-1. **Sign up** at [netlify.com](https://app.netlify.com/signup)
-2. Click **"Add new site"** → **"Import an existing project"**
-3. Connect your **GitHub/GitLab/Bitbucket** account
-4. Select your **rajniti repository**
-5. Configure build settings:
-    - **Base directory**: `frontend`
-    - **Build command**: `npm run build`
-    - **Publish directory**: `.next`
-    - **Framework**: Next.js (auto-detected)
-6. Click **"Deploy site"**
+1. **Sign up** at [vercel.com](https://vercel.com/signup)
+2. Click **"Add New Project"**
+3. Import your **rajniti repository** from GitHub/GitLab/Bitbucket
+4. Configure project settings:
+    - **Framework Preset**: Next.js (auto-detected)
+    - **Root Directory**: `frontend`
+    - **Build Command**: `npm run build` (auto-detected)
+    - **Output Directory**: `.next` (auto-detected)
+5. Click **"Deploy"**
+
+Vercel will automatically detect Next.js and configure everything for you!
 
 #### **Step 3: Add Environment Variables (Optional)**
 
-If you have a backend API, add this environment variable in Netlify:
+If you have a backend API, add this environment variable in Vercel:
 
-1. Go to **Site settings** → **Environment variables**
+1. Go to **Project Settings** → **Environment Variables**
 2. Add variable:
     - **Key**: `NEXT_PUBLIC_API_URL`
     - **Value**: `https://your-backend-api.com`
+    - **Environments**: Production, Preview, Development
+3. Redeploy to apply changes
 
-#### **Step 4: Update Backend URL (If applicable)**
-
-If using a separate backend, edit `frontend/netlify.toml`:
-
-```toml
-[[redirects]]
-  from = "/api/*"
-  to = "https://your-backend-url.run.app/api/:splat"
-  status = 200
-  force = false
-```
-
-#### **Deploy via Netlify CLI**
+#### **Deploy via Vercel CLI**
 
 ```bash
-# Install Netlify CLI
-npm install -g netlify-cli
+# Install Vercel CLI (if not already installed)
+npm install -g vercel
 
-# Login
-netlify login
+# Login to Vercel
+vercel login
 
-# Navigate to frontend
+# Navigate to frontend directory
 cd frontend
 
-# Deploy (follow prompts)
-netlify deploy --prod
+# Deploy to production
+vercel --prod
 ```
 
 #### **Continuous Deployment**
 
-Once connected to GitHub, Netlify automatically deploys when you push to `main`:
+Once connected to GitHub, Vercel automatically deploys when you push to `main`:
 
 ```bash
 git add .
 git commit -m "Update frontend"
 git push origin main
-# ✅ Netlify automatically rebuilds and deploys!
+# ✅ Vercel automatically rebuilds and deploys!
 ```
 
 #### **Custom Domain (Optional)**
 
-1. Go to **Domain settings** in Netlify Dashboard
-2. Click **"Add custom domain"**
-3. Follow DNS configuration instructions
+1. Go to **Project Settings** → **Domains**
+2. Click **"Add Domain"**
+3. Enter your domain name
+4. Follow DNS configuration instructions
+
+#### **Vercel Features**
+
+- ⚡ **Automatic HTTPS**: SSL certificates included
+- 🌍 **Global CDN**: Fast content delivery worldwide
+- 🔄 **Preview Deployments**: Automatic preview URLs for every PR
+- 📊 **Analytics**: Built-in performance monitoring
+- 🔒 **Security**: DDoS protection and security headers
 
 ---
 
 ### **Alternative Deployment Options**
 
-**Vercel (Alternative to Netlify):**
+**Netlify:**
 
 ```bash
 cd frontend
-npx vercel --prod
+npm install -g netlify-cli
+netlify login
+netlify deploy --prod
 ```
 
 **GCP Cloud Run:**
