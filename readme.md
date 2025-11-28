@@ -13,12 +13,11 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 
 ## 🚢 Quick Deployment
 
-| Platform          | Type       | Command                 | Status   |
-| ----------------- | ---------- | ----------------------- | -------- |
-| **Vercel**        | Frontend   | `vercel --prod`         | ✅ Ready |
-| **GCP Cloud Run** | Backend    | `gcloud builds submit`  | ✅ Ready |
-| **Docker**        | Full Stack | `docker-compose up -d`  | ✅ Ready |
-| **Netlify**       | Frontend   | `netlify deploy --prod` | ✅ Ready |
+| Platform          | Type       | Command                | Status   |
+| ----------------- | ---------- | ---------------------- | -------- |
+| **Vercel**        | Frontend   | `vercel --prod`        | ✅ Ready |
+| **GCP Cloud Run** | Backend    | `gcloud builds submit` | ✅ Ready |
+| **Docker**        | Full Stack | `docker-compose up -d` | ✅ Ready |
 
 👉 **Jump to**: [Vercel Deployment Guide](#deploy-to-vercel-) • [Backend Deployment](#deployment) • [Docker Setup](#option-1-docker-recommended)
 
@@ -238,7 +237,7 @@ The Rajniti landing page is a beautiful, India-themed website built with Next.js
 -   🎨 **India-Themed Design**: Orange, white, and green color scheme
 -   ⚡ **Server-Side Rendering**: Built with Next.js App Router for optimal performance
 -   📱 **Fully Responsive**: Works seamlessly on all devices
--   🚀 **Easy Deployment**: Compatible with Vercel (recommended), Netlify, GCP, and AWS
+-   🚀 **Easy Deployment**: Compatible with Vercel (recommended), GCP, and AWS
 
 ### **Quick Start (Frontend)**
 
@@ -335,30 +334,22 @@ git push origin main
 
 #### **Vercel Features**
 
-- ⚡ **Automatic HTTPS**: SSL certificates included
-- 🌍 **Global CDN**: Fast content delivery worldwide
-- 🔄 **Preview Deployments**: Automatic preview URLs for every PR
-- 📊 **Analytics**: Built-in performance monitoring
-- 🔒 **Security**: DDoS protection and security headers
+-   ⚡ **Automatic HTTPS**: SSL certificates included
+-   🌍 **Global CDN**: Fast content delivery worldwide
+-   🔄 **Preview Deployments**: Automatic preview URLs for every PR
+-   📊 **Analytics**: Built-in performance monitoring
+-   🔒 **Security**: DDoS protection and security headers
 
 ---
 
 ### **Alternative Deployment Options**
 
-**Netlify:**
-
-```bash
-cd frontend
-npm install -g netlify-cli
-netlify login
-netlify deploy --prod
-```
-
+````
 **GCP Cloud Run:**
 
 ```bash
 gcloud run deploy rajniti-frontend --source ./frontend
-```
+````
 
 **Docker (Self-hosted):**
 
