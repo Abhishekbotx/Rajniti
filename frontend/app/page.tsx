@@ -10,7 +10,7 @@ export default function Home() {
             <Navbar variant='default' />
 
             {/* Hero Section */}
-            <section className='py-20 sm:py-32'>
+            <section className='py-20 sm:py-32 relative z-[2]'>
                 <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
                     <div className='text-center'>
                         <div className='mb-8 flex justify-center'>
@@ -84,8 +84,8 @@ export default function Home() {
                 </div>
 
                 {/* Decorative Elements */}
-                <div className='absolute top-0 left-0 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse'></div>
-                <div className='absolute bottom-0 right-0 w-72 h-72 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000'></div>
+                <div className='absolute top-0 left-0 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse z-[1] pointer-events-none'></div>
+                <div className='absolute bottom-0 right-0 w-72 h-72 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000 z-[1] pointer-events-none'></div>
             </section>
 
             {/* Why We're Building Section */}

@@ -67,10 +67,11 @@ export default function Button(props: ButtonProps) {
             {isLoading ? (
                 <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
             ) : leftIcon ? (
-                <span className='mr-2'>{leftIcon}</span>
+                <span className='mr-2 pointer-events-none'>{leftIcon}</span>
             ) : null}
             {children}
-            {rightIcon && <span className='ml-2'>{rightIcon}</span>}
+            {rightIcon && (<span className='ml-2 pointer-events-none'>{rightIcon}</span>
+)}
         </>
     )
 
@@ -91,8 +92,10 @@ export default function Button(props: ButtonProps) {
         }
 
         return (
-            <Link href={href} className={classes} {...(linkProps as any)}>
+            <Link href={href} legacyBehavior>
+            <a className={classes} {...(linkProps as any)}>
                 {content}
+            </a>
             </Link>
         )
     }
