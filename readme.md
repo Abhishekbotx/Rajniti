@@ -61,7 +61,29 @@ A simple, clean REST API serving Indian Election Commission data from JSON files
 
 ## 🚀 **Quick Start**
 
-### **Option 1: Docker (Recommended)**
+### **Option 1: Quick Start with Make (Recommended)**
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/rajniti.git
+cd rajniti
+
+# One command to install, build, and start (uses pip-compile)
+make
+
+# API available at http://localhost:8000
+# Health check: http://localhost:8000/api/v1/health
+```
+
+**What `make` does:**
+- Creates virtual environment
+- Installs pip-tools
+- Compiles `requirements.txt` from `requirements.in` using `pip-compile`
+- Installs all dependencies
+- Builds Docker image
+- Starts the application
+
+### **Option 2: Docker Only**
 
 ```bash
 # Clone the repository
@@ -75,23 +97,6 @@ docker-compose up -d
 # Health check: http://localhost:8000/api/v1/health
 ```
 
-### **Option 2: Local Installation (Automated)**
-
-```bash
-# Clone and setup
-git clone https://github.com/your-username/rajniti.git
-cd rajniti
-
-# Automated setup (recommended)
-make setup
-
-# Start development server
-make dev
-
-# Or run directly
-python run.py
-```
-
 ### **Option 3: Manual Setup**
 
 ```bash
@@ -99,7 +104,11 @@ python run.py
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install dependencies
+# Install pip-tools and compile dependencies
+pip install --upgrade pip pip-tools
+pip-compile requirements.in
+
+# Install compiled dependencies
 pip install -r requirements.txt
 
 # Install pre-commit hooks
@@ -945,15 +954,6 @@ docker-compose down -v
 **Using Docker:**
 
 ```bash
-# Start PostgreSQL container
-docker run -d \
-  --name rajniti-postgres \
-  -e POSTGRES_USER=rajniti \
-  -e POSTGRES_PASSWORD=rajniti_dev_password \
-  -e POSTGRES_DB=rajniti \
-  -p 5432:5432 \
-  postgres:16-alpine
-
 # Stop container
 docker stop rajniti-postgres
 
@@ -982,38 +982,26 @@ psql -d rajniti
 Quick reference for common Make commands:
 
 ```bash
-# Setup development environment
-make setup
+# Install, build, and start (all-in-one, uses pip-compile)
+make
 
-# Start development server
-make dev
+# Compile requirements.txt from requirements.in (pip-compile)
+make compile
 
-# Run tests
-make test
+# Stop application
+make stop
 
-# Format code
-make format
+# Restart application
+make restart
 
-# Run linting
-make lint
+# View logs
+make logs
 
-# Install dependencies
-make install
-
-# Install pre-commit hooks
-make pre-commit
-
-# Clean temporary files
+# Clean up Docker resources
 make clean
 
-# Build Docker image
-make docker-build
-
-# Run Docker container
-make docker-run
-
-# Show scraping help
-make scrape-help
+# Show help
+make help
 ```
 
 ### **⚙️ Environment Setup**
@@ -1446,15 +1434,6 @@ docker-compose up -d
 ### **Local Development**
 
 ```bash
-# Install PostgreSQL locally or use Docker
-docker run -d \
-  --name rajniti-postgres \
-  -e POSTGRES_USER=rajniti \
-  -e POSTGRES_PASSWORD=rajniti_dev_password \
-  -e POSTGRES_DB=rajniti \
-  -p 5432:5432 \
-  postgres:16-alpine
-
 # Set DATABASE_URL in your environment
 export DATABASE_URL="postgresql://rajniti:rajniti_dev_password@localhost:5432/rajniti"
 
@@ -1870,9 +1849,9 @@ services:
     postgres:
         image: postgres:16-alpine
         environment:
-            - POSTGRES_USER=rajniti
-            - POSTGRES_PASSWORD=rajniti_dev_password
-            - POSTGRES_DB=rajniti
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB}
         ports:
             - "5432:5432"
         volumes:
@@ -1932,15 +1911,22 @@ pip install pip-tools
 # Add new dependency to requirements.in
 echo "new-package==1.0.0" >> requirements.in
 
-# Compile dependencies
+# Compile dependencies (generates requirements.txt)
 pip-compile requirements.in
 
 # Install compiled dependencies
-pip-sync requirements.txt
+pip install -r requirements.txt
 
-# Or upgrade all
+# Upgrade all dependencies
 pip-compile --upgrade requirements.in
 ```
+
+**Why pip-compile?**
+- ✅ Pins all transitive dependencies for reproducible builds
+- ✅ Generates `requirements.txt` with exact versions
+- ✅ Easy to update: just edit `requirements.in` and recompile
+- ✅ Used automatically in `make` command
+- ✅ Gracefully handles Python version mismatches
 
 ### **Running Tests**
 
