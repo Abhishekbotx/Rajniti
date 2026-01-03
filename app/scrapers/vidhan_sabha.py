@@ -15,7 +15,7 @@ import json, os
 from typing import Any, Dict, List
 from bs4 import BeautifulSoup
 
-from .base import (
+from app.scrapers.base import (
     clean_margin,
     clean_votes,
     get_with_retry,
@@ -148,7 +148,7 @@ class VidhanSabhaScraper:
         parties_data = self._scrape_parties()
         self.parties_data = parties_data
         save_json(self.parties_data, self.parties_file)
-        logger.info(f"🌟 Found {str(len(self.parties_data))} parties.")
+        logger.info(f"🌟 Found {str(len(parties_data))} parties.")
         
         for party in self.parties_data:
             logger.info(f"\n Scraping Party: {party['name']} ({party['id']})")
@@ -361,7 +361,7 @@ class VidhanSabhaScraper:
 
         # Sort by seats (descending)
         # self.parties_data.sort(key=lambda x: (-x["total_seats"], x["party_name"]))
-        logger.info(f"Scraped {len(self.parties_data)} parties")
+        logger.info(f"Scraped {len(parties_data)} parties")
         return parties_data
 
     def _scrape_constituencies(self, party_id:str,state_id:str, party_name:str) -> List[Dict[str, str]]:
